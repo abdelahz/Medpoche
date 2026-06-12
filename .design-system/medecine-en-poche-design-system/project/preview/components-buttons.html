@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body{margin:0;font-family:var(--font-sans);background:var(--gray-0);padding:22px 24px;}
+  .row{display:flex;gap:12px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+  .row:last-child{margin-bottom:0;}
+  button{font-family:inherit;cursor:pointer;border:none;border-radius:8px;font-weight:500;transition:background 150ms ease,border-color 150ms ease;display:inline-flex;align-items:center;gap:7px;}
+  .primary{background:var(--primary-500);color:#fff;padding:9px 18px;font-size:13px;}
+  .primary:hover{background:var(--primary-600);}
+  .secondary{background:var(--primary-50);color:var(--primary-900);border:0.5px solid var(--primary-100);padding:9px 18px;font-size:13px;}
+  .secondary:hover{background:var(--primary-100);}
+  .ghost{background:transparent;color:var(--gray-600);border:0.5px solid var(--gray-200);padding:9px 18px;font-size:13px;}
+  .ghost:hover{background:var(--gray-50);}
+  .danger{background:var(--danger-bg);color:var(--danger-text);border:0.5px solid var(--danger-border);padding:9px 18px;font-size:13px;}
+  .danger:hover{background:#FEE2E2;}
+  .sm{padding:7px 12px;font-size:12px;}
+  .lg{padding:11px 22px;font-size:14px;}
+  .icon{padding:9px;}
+  .icon svg{width:16px;height:16px;}
+  .lab{font-size:10px;color:var(--gray-400);width:64px;}
+</style></head>
+<body>
+  <div class="row"><span class="lab">variants</span>
+    <button class="primary">Publier</button>
+    <button class="secondary">Modifier</button>
+    <button class="ghost">Annuler</button>
+    <button class="danger">Supprimer</button>
+  </div>
+  <div class="row"><span class="lab">sizes</span>
+    <button class="primary sm">Small</button>
+    <button class="primary">Medium</button>
+    <button class="primary lg">Large</button>
+    <button class="primary"><i data-lucide="plus"></i>Nouveau QCM</button>
+    <button class="ghost icon"><i data-lucide="settings"></i></button>
+  </div>
+  <script>lucide.createIcons();</script>
+</body></html>

@@ -1,0 +1,21 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body{margin:0;font-family:var(--font-sans);background:var(--gray-0);padding:20px;}
+  .row{display:flex;gap:14px;}
+  .swatch{flex:1;display:flex;flex-direction:column;gap:8px;}
+  .chip{height:64px;border-radius:var(--radius-md);border:0.5px solid var(--gray-200);}
+  .meta{display:flex;flex-direction:column;gap:1px;}
+  .name{font-size:12px;font-weight:600;color:var(--gray-900);}
+  .hex{font-size:11px;color:var(--gray-600);font-variant-numeric:tabular-nums;}
+  .use{font-size:10px;color:var(--gray-400);}
+</style></head>
+<body>
+  <div class="row">
+    <div class="swatch"><div class="chip" style="background:var(--primary-50)"></div><div class="meta"><span class="name">primary-50</span><span class="hex">#EEF4FF</span><span class="use">bg / hover</span></div></div>
+    <div class="swatch"><div class="chip" style="background:var(--primary-100)"></div><div class="meta"><span class="name">primary-100</span><span class="hex">#C8D8F8</span><span class="use">tint border</span></div></div>
+    <div class="swatch"><div class="chip" style="background:var(--primary-500)"></div><div class="meta"><span class="name">primary-500</span><span class="hex">#3B6BE8</span><span class="use">buttons / links</span></div></div>
+    <div class="swatch"><div class="chip" style="background:var(--primary-600)"></div><div class="meta"><span class="name">primary-600</span><span class="hex">#2E5DD4</span><span class="use">hover</span></div></div>
+    <div class="swatch"><div class="chip" style="background:var(--primary-900)"></div><div class="meta"><span class="name">primary-900</span><span class="hex">#1A2F6B</span><span class="use">text on tint</span></div></div>
+  </div>
+</body></html>

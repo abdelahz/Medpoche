@@ -1,0 +1,240 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   MEDECINE EN POCHE — Design System tokens
+   Source of truth: design-system/colors_and_type.css
+   ============================================================ */
+:root {
+  /* ---------- PRIMARY SCALE ---------- */
+  --primary-50:  #EEF4FF;
+  --primary-100: #C8D8F8;
+  --primary-500: #3B6BE8;
+  --primary-600: #2E5DD4;
+  --primary-900: #1A2F6B;
+
+  /* ---------- NEUTRAL SCALE ---------- */
+  --gray-0:   #FFFFFF;
+  --gray-50:  #F7F8FC;
+  --gray-100: #F0F2F7;
+  --gray-200: #EAECF0;
+  --gray-400: #C0C6D4;
+  --gray-600: #8A92A6;
+  --gray-900: #1A1D2E;
+
+  /* ---------- SEMANTIC ---------- */
+  --success-bg: #EDFAF3; --success-text: #1A7B50; --success-border: #A7F3D0;
+  --warning-bg: #FFF8EC; --warning-text: #A0620A; --warning-border: #FDE68A;
+  --danger-bg:  #FEF2F2; --danger-text:  #B91C1C; --danger-border:  #FECACA;
+  --info-bg:    #EEF4FF; --info-text:    #2255CC; --info-border:    #C8D8F8;
+
+  --success-solid: #22C55E;
+  --warning-solid: #F59E0B;
+  --danger-solid:  #EF4444;
+
+  /* ---------- MODULE COLORS (badges / accents only) ---------- */
+  --module-maths:    #3B6BE8;
+  --module-chimie:   #0EA5E9;
+  --module-physique: #8B5CF6;
+  --module-svt:      #10B981;
+
+  /* ---------- PLAYFUL ACCENTS (student app) ---------- */
+  --accent-50:  #F1EDFF;  --accent-500: #7C5CFF;  --accent-600: #6A48F0;
+  --reward-50:  #FFF4DD;  --reward-500: #FFB020;  --reward-600: #F59E0B;
+
+  /* Gradients for hero / reward surfaces */
+  --grad-primary: linear-gradient(135deg, #4C7BFF 0%, #7C5CFF 100%);
+  --grad-reward:  linear-gradient(135deg, #FFC94D 0%, #FB8C2E 100%);
+  --grad-accent:  linear-gradient(135deg, #7C5CFF 0%, #B06BFF 100%);
+
+  /* ---------- BRAND (logo) ---------- */
+  --brand-blue:  #145281;
+  --brand-green: #6FAC35;
+
+  /* ---------- RADIUS ---------- */
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-full: 9999px;
+
+  /* ---------- SHADOWS ---------- */
+  --shadow-card:  0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-modal: 0 8px 24px rgba(0,0,0,0.10);
+
+  /* ---------- MOTION ---------- */
+  --transition-interactive: 150ms ease;
+  --transition-layout:      200ms ease;
+  --transition-progress:    400ms ease;
+
+  /* ---------- shadcn bridge (HSL) ---------- */
+  --background: 0 0% 100%;
+  --foreground: 230 24% 14%;          /* gray-900 #1A1D2E */
+  --card: 0 0% 100%;
+  --card-foreground: 230 24% 14%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 230 24% 14%;
+  --primary: 222 79% 57%;             /* primary-500 #3B6BE8 */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 226 100% 97%;          /* primary-50 */
+  --secondary-foreground: 224 60% 26%;
+  --muted: 228 38% 96%;               /* gray-100 */
+  --muted-foreground: 225 14% 60%;    /* gray-600 */
+  --accent: 226 100% 97%;
+  --accent-foreground: 224 60% 26%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 222 24% 93%;              /* gray-200 #EAECF0 */
+  --input: 222 24% 93%;
+  --ring: 222 79% 57%;
+  --radius: 0.75rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    font-size: 13px;
+  }
+}
+
+/* Restrained loading shimmer (gray-100 → gray-200 pulse) */
+@keyframes mp-shimmer {
+  0%, 100% { background-color: var(--gray-100); }
+  50%      { background-color: var(--gray-200); }
+}
+.mp-skeleton {
+  animation: mp-shimmer 1.4s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
+@keyframes mp-spin { to { transform: rotate(360deg); } }
+.mp-spin { animation: mp-spin 700ms linear infinite; }
+
+/* Playful "pop" for rewards/badges — a single gentle overshoot, not a loop. */
+@keyframes mp-pop {
+  0%   { transform: scale(0.85); opacity: 0; }
+  60%  { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.mp-pop { animation: mp-pop 300ms ease-out both; }
+
+/* End-of-session celebration confetti — gentle fall + fade, no bounce. */
+@keyframes mp-confetti {
+  0%   { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(220px) rotate(240deg); opacity: 0; }
+}
+.mp-confetti-piece {
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  animation: mp-confetti 1100ms ease-in forwards;
+}
+
+/* ============================================================
+   LANDING PAGE — marketing-only motion (lightweight, no deps).
+   All animations respect prefers-reduced-motion (see bottom).
+   ============================================================ */
+
+/* Scroll-reveal: hidden until the Reveal wrapper adds .is-visible. */
+.lp-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 600ms ease, transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.lp-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Gentle floating for hero device mockups / accent chips. */
+@keyframes lp-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-12px); }
+}
+.lp-float { animation: lp-float 6s ease-in-out infinite; }
+.lp-float-slow { animation: lp-float 9s ease-in-out infinite; }
+
+/* Slow animated gradient for hero/CTA backdrops. */
+@keyframes lp-gradient-pan {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.lp-gradient-animated {
+  background-size: 200% 200%;
+  animation: lp-gradient-pan 14s ease infinite;
+}
+
+/* Soft pulsing glow ring behind feature icons. */
+@keyframes lp-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.55; }
+  50%      { transform: scale(1.18); opacity: 0; }
+}
+.lp-pulse { animation: lp-pulse 2.6s ease-out infinite; }
+
+/* Continuous marquee for the trust/stat strip. */
+@keyframes lp-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.lp-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: lp-marquee 28s linear infinite;
+}
+
+/* Blob drift for decorative background shapes. */
+@keyframes lp-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(18px, -14px) scale(1.06); }
+  66%      { transform: translate(-14px, 12px) scale(0.97); }
+}
+.lp-drift { animation: lp-drift 18s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-reveal { opacity: 1; transform: none; transition: none; }
+  .lp-float, .lp-float-slow, .lp-gradient-animated, .lp-pulse,
+  .lp-marquee-track, .lp-drift { animation: none; }
+}
+
+/* MCQ content — restore list markers that Tailwind's reset strips, and give
+   block elements sensible spacing so questions/options read naturally. */
+.mcq-content ul {
+  list-style: disc;
+  padding-left: 1.4em;
+  margin: 0.35em 0;
+}
+.mcq-content ol {
+  list-style: decimal;
+  padding-left: 1.5em;
+  margin: 0.35em 0;
+}
+.mcq-content li {
+  margin: 0.15em 0;
+}
+.mcq-content li > p {
+  margin: 0;
+}
+.mcq-content p {
+  margin: 0.3em 0;
+}
+.mcq-content p:first-child {
+  margin-top: 0;
+}
+.mcq-content p:last-child {
+  margin-bottom: 0;
+}
+.mcq-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 0.4em 0;
+}

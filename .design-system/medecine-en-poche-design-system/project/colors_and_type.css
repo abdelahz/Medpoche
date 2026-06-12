@@ -1,0 +1,142 @@
+/* ============================================================
+   MEDECINE EN POCHE — Colors & Type Foundations
+   Single source of truth for color + typography tokens.
+   Font: Plus Jakarta Sans (Google Fonts)
+   @import is included for standalone use; production should
+   load the font via next/font/google per the design spec.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ---------- FONT ---------- */
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, sans-serif;
+
+  /* ---------- PRIMARY SCALE ---------- */
+  --primary-50:  #EEF4FF;   /* light backgrounds, hover states */
+  --primary-100: #C8D8F8;   /* borders on primary surfaces */
+  --primary-500: #3B6BE8;   /* buttons, active states, links */
+  --primary-600: #2E5DD4;   /* button hover */
+  --primary-900: #1A2F6B;   /* text on primary bg */
+
+  /* ---------- NEUTRAL SCALE ---------- */
+  --gray-0:   #FFFFFF;
+  --gray-50:  #F7F8FC;      /* page background (admin) */
+  --gray-100: #F0F2F7;      /* subtle surface */
+  --gray-200: #EAECF0;      /* borders, dividers */
+  --gray-400: #C0C6D4;      /* inactive icons, placeholders */
+  --gray-600: #8A92A6;      /* muted text, labels */
+  --gray-900: #1A1D2E;      /* primary text, headings */
+
+  /* ---------- SEMANTIC ---------- */
+  --success-bg:     #EDFAF3;  --success-text: #1A7B50;  --success-border: #A7F3D0;
+  --warning-bg:     #FFF8EC;  --warning-text: #A0620A;  --warning-border: #FDE68A;
+  --danger-bg:      #FEF2F2;  --danger-text:  #B91C1C;  --danger-border:  #FECACA;
+  --info-bg:        #EEF4FF;  --info-text:    #2255CC;  --info-border:    #C8D8F8;
+
+  --success-solid: #22C55E;
+  --warning-solid: #F59E0B;
+  --danger-solid:  #EF4444;
+
+  /* ---------- MODULE COLORS (badges / accents only) ---------- */
+  --module-maths:    #3B6BE8;  /* Mathématiques — primary-500 */
+  --module-chimie:   #0EA5E9;  /* Chimie — sky blue */
+  --module-physique: #8B5CF6;  /* Physique — violet */
+  --module-svt:      #10B981;  /* SVT — emerald */
+
+  /* ---------- BRAND (from logo — accent use only) ---------- */
+  --brand-blue:  #145281;   /* logo navy — cap, wordmark, line art */
+  --brand-green: #6FAC35;   /* logo green — "concours de médecine" */
+
+  /* ---------- SPACING SCALE ---------- */
+  --space-xs:  4px;
+  --space-sm:  8px;
+  --space-md:  12px;
+  --space-lg:  16px;
+  --space-xl:  24px;
+  --space-2xl: 32px;
+  --space-3xl: 48px;
+
+  /* ---------- RADIUS SCALE ---------- */
+  --radius-sm:   4px;   /* focus ring, small elements */
+  --radius-md:   8px;   /* buttons, badges, small cards, icon containers */
+  --radius-lg:   12px;  /* cards, panels, modals */
+  --radius-xl:   16px;  /* large cards, sheets */
+  --radius-full: 9999px;/* pills, tags, avatars */
+
+  /* ---------- BORDERS ---------- */
+  --border-width: 0.5px;          /* default everywhere */
+  --border-color: var(--gray-200);
+  --border-color-primary: var(--primary-100);
+
+  /* ---------- SHADOWS (sparing) ---------- */
+  --shadow-card:  0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-modal: 0 8px 24px rgba(0,0,0,0.10);
+
+  /* ---------- MOTION ---------- */
+  --transition-interactive: 150ms ease;  /* bg + border-color */
+  --transition-layout:      200ms ease;  /* width, position */
+  --transition-progress:    400ms ease;  /* progress fills */
+
+  /* ============================================================
+     SEMANTIC TYPE TOKENS
+     3 sizes max per screen. Never weight 800/900.
+     ============================================================ */
+
+  /* foreground roles */
+  --fg-strong: var(--gray-900);  /* headings, primary text */
+  --fg-muted:  var(--gray-600);  /* labels, secondary text */
+  --fg-faint:  var(--gray-400);  /* placeholders, disabled */
+  --fg-link:   var(--primary-500);
+
+  /* type ramp (sizes used across admin + student surfaces) */
+  --text-micro:  10px;  /* micro-labels (uppercase, tracked) */
+  --text-2xs:    11px;  /* badges */
+  --text-xs:     12px;  /* labels, deltas, captions */
+  --text-sm:     13px;  /* body / controls (default UI text) */
+  --text-base:   14px;  /* large buttons, emphasized body */
+  --text-md:     15px;  /* logo wordmark, list titles */
+  --text-lg:     17px;  /* topbar / page titles */
+  --text-xl:     20px;  /* section headings */
+  --text-2xl:    24px;  /* card / panel headings */
+  --text-stat:   28px;  /* stat-card numbers */
+  --text-display:34px;  /* large display numbers */
+
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  --leading-tight:  1.2;
+  --leading-snug:   1.35;
+  --leading-normal: 1.5;
+
+  --tracking-label: 0.08em;  /* micro-labels / ALL CAPS only */
+}
+
+/* ============================================================
+   BASE ELEMENT STYLES — opt-in via .mp-typo on a container
+   ============================================================ */
+.mp-typo {
+  font-family: var(--font-sans);
+  color: var(--fg-strong);
+  -webkit-font-smoothing: antialiased;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+.mp-typo h1 { font-size: var(--text-2xl); font-weight: var(--weight-bold);     line-height: var(--leading-tight); margin: 0; letter-spacing: -0.01em; }
+.mp-typo h2 { font-size: var(--text-xl);  font-weight: var(--weight-semibold); line-height: var(--leading-tight); margin: 0; }
+.mp-typo h3 { font-size: var(--text-lg);  font-weight: var(--weight-semibold); line-height: var(--leading-snug);  margin: 0; }
+.mp-typo h4 { font-size: var(--text-md);  font-weight: var(--weight-semibold); line-height: var(--leading-snug);  margin: 0; }
+.mp-typo p  { font-size: var(--text-sm);  font-weight: var(--weight-regular);  line-height: var(--leading-normal);color: var(--fg-strong); margin: 0; }
+.mp-typo small,
+.mp-typo .label { font-size: var(--text-xs); color: var(--fg-muted); }
+.mp-typo .micro {
+  font-size: var(--text-micro);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+.mp-typo a { color: var(--fg-link); text-decoration: none; }
+.mp-typo a:hover { text-decoration: underline; }

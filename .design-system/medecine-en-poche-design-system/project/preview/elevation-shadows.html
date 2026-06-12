@@ -1,0 +1,17 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body{margin:0;font-family:var(--font-sans);background:var(--gray-50);padding:28px 24px;display:flex;gap:28px;align-items:center;}
+  .item{flex:1;display:flex;flex-direction:column;align-items:center;gap:12px;}
+  .box{width:100%;height:70px;background:var(--gray-0);border-radius:var(--radius-lg);}
+  .flat{border:0.5px solid var(--gray-200);}
+  .card{box-shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);}
+  .modal{box-shadow:0 8px 24px rgba(0,0,0,.10);}
+  .tok{font-size:11px;font-weight:600;color:var(--gray-900);}
+  .px{font-size:10px;color:var(--gray-600);text-align:center;}
+</style></head>
+<body>
+  <div class="item"><div class="box flat"></div><span class="tok">flat</span><span class="px">0.5px border, no shadow<br>(default cards)</span></div>
+  <div class="item"><div class="box card"></div><span class="tok">card</span><span class="px">0 1px 3px /.06<br>+ 0 1px 2px /.04</span></div>
+  <div class="item"><div class="box modal"></div><span class="tok">modal</span><span class="px">0 8px 24px /.10<br>(floating only)</span></div>
+</body></html>

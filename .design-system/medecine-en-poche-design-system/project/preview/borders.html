@@ -1,0 +1,17 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body{margin:0;font-family:var(--font-sans);background:var(--gray-0);padding:22px 24px;display:flex;gap:22px;align-items:center;}
+  .item{flex:1;display:flex;flex-direction:column;gap:10px;}
+  .box{height:52px;border-radius:var(--radius-md);background:var(--gray-0);}
+  .b-default{border:0.5px solid var(--gray-200);}
+  .b-primary{border:0.5px solid var(--primary-100);background:var(--primary-50);}
+  .b-active{border:1.5px solid var(--primary-500);background:var(--primary-50);}
+  .tok{font-size:11px;font-weight:600;color:var(--gray-900);}
+  .px{font-size:10px;color:var(--gray-600);}
+</style></head>
+<body>
+  <div class="item"><div class="box b-default"></div><span class="tok">default</span><span class="px">0.5px gray-200</span></div>
+  <div class="item"><div class="box b-primary"></div><span class="tok">on tint</span><span class="px">0.5px primary-100</span></div>
+  <div class="item"><div class="box b-active"></div><span class="tok">active / selected</span><span class="px">1.5px primary-500</span></div>
+</body></html>

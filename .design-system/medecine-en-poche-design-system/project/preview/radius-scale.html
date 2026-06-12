@@ -1,0 +1,20 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body{margin:0;font-family:var(--font-sans);background:var(--gray-0);padding:22px 24px;}
+  .row{display:flex;gap:18px;align-items:flex-end;}
+  .item{display:flex;flex-direction:column;align-items:center;gap:8px;}
+  .box{width:62px;height:62px;background:var(--primary-50);border:0.5px solid var(--primary-100);}
+  .tok{font-size:11px;font-weight:600;color:var(--gray-900);}
+  .px{font-size:10px;color:var(--gray-600);}
+  .pill{width:62px;height:34px;border-radius:9999px;background:var(--primary-50);border:0.5px solid var(--primary-100);}
+</style></head>
+<body>
+  <div class="row">
+    <div class="item"><div class="box" style="border-radius:4px"></div><span class="tok">4px</span><span class="px">focus / small</span></div>
+    <div class="item"><div class="box" style="border-radius:8px"></div><span class="tok">8px</span><span class="px">button / badge</span></div>
+    <div class="item"><div class="box" style="border-radius:12px"></div><span class="tok">12px</span><span class="px">card / modal</span></div>
+    <div class="item"><div class="box" style="border-radius:16px"></div><span class="tok">16px</span><span class="px">large card</span></div>
+    <div class="item"><div class="pill"></div><span class="tok">9999px</span><span class="px">pill / avatar</span></div>
+  </div>
+</body></html>

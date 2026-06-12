@@ -1,0 +1,29 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body{margin:0;font-family:var(--font-sans);background:var(--gray-50);padding:22px 24px;display:flex;gap:16px;align-items:stretch;}
+  .card{background:#fff;border:0.5px solid var(--gray-200);border-radius:12px;padding:16px 20px;flex:1;}
+  .card h4{font-size:15px;font-weight:600;color:var(--gray-900);margin:0 0 6px;}
+  .card p{font-size:12px;color:var(--gray-600);margin:0;line-height:1.5;}
+  .stat{background:#fff;border:0.5px solid var(--gray-200);border-radius:12px;padding:16px 20px;flex:1;display:flex;flex-direction:column;gap:10px;}
+  .ic{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;}
+  .ic svg{width:18px;height:18px;}
+  .num{font-size:28px;font-weight:700;color:var(--gray-900);line-height:1;}
+  .label{font-size:12px;color:var(--gray-600);}
+  .delta{font-size:12px;font-weight:500;color:var(--success-text);}
+</style></head>
+<body>
+  <div class="card"><h4>Carte par défaut</h4><p>Surface blanche, bord 0.5px gray-200, rayon 12px, padding 16×20. Pas d'ombre — le bord suffit.</p></div>
+  <div class="stat">
+    <div class="ic" style="background:var(--success-bg);color:var(--success-text)"><i data-lucide="users"></i></div>
+    <div><div class="num">128</div><div class="label">Étudiants actifs</div></div>
+    <div class="delta">+12 cette semaine</div>
+  </div>
+  <div class="stat">
+    <div class="ic" style="background:var(--info-bg);color:var(--info-text)"><i data-lucide="file-text"></i></div>
+    <div><div class="num">1 240</div><div class="label">QCMs publiés</div></div>
+    <div class="delta">+38 ce mois</div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body></html>

@@ -1,0 +1,24 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body{margin:0;font-family:var(--font-sans);background:var(--gray-0);padding:20px;}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .tile{border-radius:var(--radius-md);border:0.5px solid;padding:10px 12px;display:flex;flex-direction:column;gap:6px;}
+  .tname{font-size:11px;font-weight:500;}
+  .solidrow{display:flex;gap:8px;align-items:center;margin-top:4px;}
+  .dot{width:14px;height:14px;border-radius:var(--radius-full);}
+  .scode{font-size:10px;color:var(--gray-600);font-variant-numeric:tabular-nums;}
+</style></head>
+<body>
+  <div class="grid">
+    <div class="tile" style="background:var(--success-bg);border-color:var(--success-border);color:var(--success-text)"><span class="tname">success</span><span class="scode" style="color:var(--success-text)">published</span></div>
+    <div class="tile" style="background:var(--warning-bg);border-color:var(--warning-border);color:var(--warning-text)"><span class="tname">warning</span><span class="scode" style="color:var(--warning-text)">flagged</span></div>
+    <div class="tile" style="background:var(--danger-bg);border-color:var(--danger-border);color:var(--danger-text)"><span class="tname">danger</span><span class="scode" style="color:var(--danger-text)">error</span></div>
+    <div class="tile" style="background:var(--info-bg);border-color:var(--info-border);color:var(--info-text)"><span class="tname">info</span><span class="scode" style="color:var(--info-text)">module</span></div>
+  </div>
+  <div class="solidrow">
+    <span class="dot" style="background:var(--success-solid)"></span><span class="scode">success-solid #22C55E</span>
+    <span class="dot" style="background:var(--warning-solid);margin-left:8px"></span><span class="scode">warning-solid #F59E0B</span>
+    <span class="dot" style="background:var(--danger-solid);margin-left:8px"></span><span class="scode">danger-solid #EF4444</span>
+  </div>
+</body></html>

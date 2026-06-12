@@ -1,0 +1,29 @@
+Concours de médecine — Annales 2023
+
+Question 1. Quelle est la primitive de la fonction f(x) = 2x ?
+A) x^2 + C
+B) 2 + C
+C) x^2
+D) 2x^2 + C
+Réponse correcte : A
+
+Question 2. La molécule d'eau a pour formule :
+A) H2O
+B) CO2
+C) O2
+D) H2O2
+Bonne réponse : A
+
+Question 3. D'après le graphe de titrage ci-dessous, quel est le pH au point d'équivalence ?
+A) 4
+B) 7
+C) 8.2
+D) 10
+(Voir la figure ci-contre pour répondre.)
+
+Question 4. Parmi les organites suivants, lequel est responsable de la respiration cellulaire ?
+A) Le noyau
+B) La mitochondrie
+C) Le ribosome
+D) L'appareil de Golgi
+Réponse : B. La mitochondrie produit l'ATP via la respiration cellulaire.

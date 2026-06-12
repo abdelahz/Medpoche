@@ -1,0 +1,30 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body{margin:0;font-family:var(--font-sans);background:var(--gray-0);padding:24px;}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .badge{padding:3px 9px;border-radius:9999px;font-size:11px;font-weight:500;display:inline-flex;align-items:center;gap:5px;}
+  .dot{width:6px;height:6px;border-radius:9999px;}
+  .published{background:var(--success-bg);color:var(--success-text);}
+  .flagged{background:var(--warning-bg);color:var(--warning-text);}
+  .error{background:var(--danger-bg);color:var(--danger-text);}
+  .module{background:var(--info-bg);color:var(--info-text);}
+  .default{background:var(--gray-100);color:var(--gray-600);}
+  .lab{font-size:10px;color:var(--gray-400);width:64px;display:block;margin-bottom:12px;}
+</style></head>
+<body>
+  <span class="lab">État · status</span>
+  <div class="row" style="margin-bottom:16px">
+    <span class="badge published"><span class="dot" style="background:var(--success-solid)"></span>Publié</span>
+    <span class="badge flagged"><span class="dot" style="background:var(--warning-solid)"></span>Signalé</span>
+    <span class="badge error"><span class="dot" style="background:var(--danger-solid)"></span>Erreur</span>
+    <span class="badge default">Brouillon</span>
+  </div>
+  <span class="lab">Module</span>
+  <div class="row">
+    <span class="badge" style="background:#EEF4FF;color:#3B6BE8">Mathématiques</span>
+    <span class="badge" style="background:#E6F6FE;color:#0369A1">Chimie</span>
+    <span class="badge" style="background:#F3EEFE;color:#6D28D9">Physique</span>
+    <span class="badge" style="background:#E7F8F1;color:#047857">SVT</span>
+  </div>
+</body></html>

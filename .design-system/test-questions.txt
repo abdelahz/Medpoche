@@ -1,0 +1,19 @@
+Concours de médecine — Série d'entraînement (questions seules)
+
+Question 1. Quelle est la primitive de la fonction f(x) = 2x ?
+A) x^2 + C
+B) 2 + C
+C) x^2
+D) 2x^2 + C
+
+Question 2. La molécule d'eau a pour formule :
+A) H2O
+B) CO2
+C) O2
+D) H2O2
+
+Question 3. Parmi les organites suivants, lequel est responsable de la respiration cellulaire ?
+A) Le noyau
+B) La mitochondrie
+C) Le ribosome
+D) L'appareil de Golgi
