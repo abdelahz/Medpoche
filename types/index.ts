@@ -91,6 +91,27 @@ export interface ExtractedMCQ {
   image_required: boolean
 }
 
+export type ExtractionStatus = 'pending' | 'processing' | 'done' | 'error'
+
+/**
+ * A durable, chunked MCQ-extraction job (admin importer). The source PDF is
+ * processed a few pages at a time so each request stays under the serverless
+ * function time limit; `result` accumulates across batches.
+ */
+export interface ExtractionJob {
+  id: string
+  admin_id: string
+  status: ExtractionStatus
+  questions_path: string
+  corrections_path: string | null
+  cursor: number
+  total_pages: number | null
+  result: ExtractedMCQ[]
+  error: string | null
+  created_at: string
+  updated_at: string
+}
+
 /** A QCM as served to the student training runner. Single-answer: `correct` is one letter. */
 export interface PracticeQuestion {
   id: number

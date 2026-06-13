@@ -50,3 +50,25 @@ create policy "Admins manage dataset files"
     bucket_id = 'dataset'
     and exists (select 1 from public.profiles where id = auth.uid() and is_admin = true)
   );
+
+-- ============================================================
+-- EXTRACTIONS bucket — source files for the chunked MCQ importer.
+-- ADMINS ONLY. The admin uploads the questions (+ optional corrigé)
+-- straight from the browser; a background job reads them page by page
+-- and deletes them once extraction finishes.
+-- ============================================================
+insert into storage.buckets (id, name, public)
+values ('extractions', 'extractions', false)
+on conflict (id) do nothing;
+
+create policy "Admins manage extraction files"
+  on storage.objects for all
+  to authenticated
+  using (
+    bucket_id = 'extractions'
+    and exists (select 1 from public.profiles where id = auth.uid() and is_admin = true)
+  )
+  with check (
+    bucket_id = 'extractions'
+    and exists (select 1 from public.profiles where id = auth.uid() and is_admin = true)
+  );

@@ -352,3 +352,38 @@ begin
   return new;
 end;
 $$ language plpgsql security definer;
+
+-- ============================================================
+-- EXTRACTION JOBS — durable, chunked MCQ extraction (re-runnable)
+-- The admin MCQ importer no longer runs Gemini in a single request:
+-- multi-page PDFs blew past Vercel's 60s function limit → 504. Each
+-- upload becomes a job processed a few pages at a time while the
+-- browser polls until done. One row per import. Safe to re-run.
+-- ============================================================
+create table if not exists extraction_jobs (
+  id uuid primary key default gen_random_uuid(),
+  admin_id uuid not null references auth.users(id) on delete cascade,
+  status text not null default 'pending',     -- pending | processing | done | error
+  questions_path text not null,               -- Storage path in the `extractions` bucket
+  corrections_path text,                       -- optional corrigé, same bucket
+  cursor int not null default 0,               -- next page index to process
+  total_pages int,                             -- filled on the first step
+  result jsonb not null default '[]'::jsonb,   -- accumulated ExtractedMCQ[]
+  error text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+create index if not exists extraction_jobs_admin_idx on extraction_jobs(admin_id, created_at);
+
+alter table extraction_jobs enable row level security;
+
+-- Admins see and drive only their own jobs.
+drop policy if exists "Admins manage own extraction jobs" on extraction_jobs;
+create policy "Admins manage own extraction jobs"
+  on extraction_jobs for all
+  using (public.is_admin() and admin_id = auth.uid())
+  with check (public.is_admin() and admin_id = auth.uid());
+
+-- A role needs a table-level GRANT before RLS is evaluated, or PostgREST
+-- returns "permission denied for table" (42501).
+grant all on extraction_jobs to anon, authenticated, service_role;
