@@ -205,6 +205,7 @@ ${COURS_VOCAB}
 - Si une question s'appuie sur une FIGURE / SCHÉMA / GRAPHE, DÉCRIS-le brièvement entre crochets dans 'question' (ex. « [Schéma : circuit RC, E = 6 V, R = 1 kΩ, C = 10 µF] » ou « [Graphe : tension u(t) en fonction du temps] »), afin que la question reste compréhensible.
 - 'image_required' = true UNIQUEMENT s'il est IMPOSSIBLE de répondre sans VOIR la figure (ex. lire une valeur précise sur une courbe). Si les informations utiles de la figure sont déjà données dans le texte de l'énoncé ou dans ta description, mets false.
 - 'has_list' = true si l'énoncé contient une liste à puces ou numérotée.
+- N'EXTRAIS PAS comme question : une simple LISTE (énumération, liste à puces/numérotée) qui n'a NI intitulé de question NI propositions A/B/C/D. En particulier, une GRILLE ou LISTE DE CORRIGÉS (ex. « 1-C, 2-A, 3-BD » ou un tableau numéro→lettre) n'est PAS une question — ne crée jamais d'objet QCM pour elle ; sers-t'en seulement pour remplir 'correct'/'explanation' des vraies questions. Tout élément SANS propositions (au moins 2 options) doit être ignoré.
 - N'invente aucune question. N'ajoute aucun commentaire hors du JSON.`
 
 /** Lightweight runtime guard: coerce/validate the model output into ExtractedMCQ[]. */
@@ -233,7 +234,14 @@ function normalize(raw: unknown): ExtractedMCQ[] {
         image_required: Boolean(r.image_required),
       }
     })
-    .filter((m) => m.question.length > 0)
+    .filter((m) => {
+      // A real MCQ needs a question stem AND actual propositions. Answer keys /
+      // "listes de corrigés" that the model sometimes mistakes for a question
+      // have no options — drop anything with fewer than 2 non-empty choices.
+      const options = [m.option_a, m.option_b, m.option_c, m.option_d, m.option_e ?? '']
+      const filledOptions = options.filter((o) => o.length > 0).length
+      return m.question.length > 0 && filledOptions >= 2
+    })
 }
 
 function getModel() {
