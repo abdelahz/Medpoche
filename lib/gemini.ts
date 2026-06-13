@@ -176,7 +176,12 @@ const responseSchema: Schema = {
 
 const SYSTEM_PROMPT = `Tu es un assistant d'extraction de QCM pour une plateforme de préparation au concours de médecine.
 On te fournit un document (souvent un PDF SCANNÉ — fais l'OCR) contenant des questions à choix multiples en français.
-Un second document optionnel — le CORRIGÉ — contient les bonnes réponses et parfois les explications.
+
+LES BONNES RÉPONSES peuvent apparaître à plusieurs endroits — cherche-les ACTIVEMENT et utilise TOUTES les sources disponibles :
+- un second document optionnel, le CORRIGÉ, lorsqu'il est fourni ;
+- DIRECTEMENT dans le document des questions : une réponse écrite après la question (« Réponse : C », « Bonne(s) réponse(s) : AB », « Rép : D »…), l'option correcte mise en évidence (cochée, surlignée, en gras, soulignée, ✓/croix), ou une justification/explication placée juste après la question ;
+- un TABLEAU ou une GRILLE de corrigé (numéro de question → lettre(s)), souvent en fin de document.
+Si la réponse figure déjà dans le document des questions, AUCUN corrigé séparé n'est nécessaire — remplis quand même 'correct' (et 'explanation' si une justification est donnée).
 
 Ta tâche : extraire TOUTES les questions et les renvoyer en JSON strict suivant le schéma imposé.
 
@@ -190,8 +195,9 @@ Règles :
 - Conserve fidèlement le français (accents é è ê à ç) et le sens.
 - MISE EN FORME — respecte la structure du texte d'origine : garde les LISTES à puces ou numérotées en Markdown (« 1. », « 2. », « - »), et fais un RETOUR À LA LIGNE (\\n) là où le document en fait un — notamment après chaque élément d'une liste, et après un « ; » ou un « . » qui termine une ligne/un point. N'aplatis JAMAIS le texte en un seul bloc continu.
 - Rends les formules mathématiques et chimiques en KaTeX : $...$ inline, $$...$$ bloc. Ex. $\\frac{1}{2}$, $H_2O$, $\\alpha$, $^{230}_{90}\\text{Th}$.
-- 'correct' = lettres des bonnes réponses en majuscules concaténées (ex. "A", "BD"). Si la correction est absente, mets "".
-- Si un CORRIGÉ est fourni, associe chaque question à sa correction (par numéro) et remplis 'correct' et 'explanation' à partir du corrigé. N'invente jamais une réponse ou une explication absente du corrigé.
+- 'correct' = lettres des bonnes réponses en majuscules concaténées (ex. "A", "BD"), en t'appuyant sur TOUTES les sources ci-dessus (corrigé séparé, réponse inline, option mise en évidence, ou grille de corrigé). Ne mets "" QUE si aucune réponse n'est trouvable nulle part dans les documents fournis.
+- 'explanation' = la justification/correction lorsqu'elle est présente (dans le corrigé OU à côté de la question dans le document), sinon null.
+- Si un CORRIGÉ séparé OU une grille de corrigé est fourni, associe chaque question à sa réponse par son NUMÉRO. N'invente JAMAIS une réponse ou une explication absente des documents.
 - 'module' : choisis exactement parmi Mathématiques, Chimie, Physique, SVT. Si tu n'es pas sûr, mets null — n'invente jamais.
 - 'subject' (chapitre) : déduis-le en PRIORITÉ du BANDEAU/titre de section, puis fais-le correspondre à EXACTEMENT l'un des chapitres de la matière ci-dessous (recopie le libellé à l'identique). Si aucun ne correspond vraiment, mets null. N'invente jamais un chapitre hors de cette liste :
 ${COURS_VOCAB}
@@ -311,7 +317,9 @@ export async function extractMcqs(
         text: "Associe chaque question du DOCUMENT 1 à sa correction dans le DOCUMENT 2 (par numéro) et remplis 'correct' et 'explanation'. N'invente jamais une réponse absente du corrigé. Renvoie le JSON selon le schéma.",
       })
     } else {
-      parts.push({ text: 'Extrais toutes les questions de ce document selon le schéma.' })
+      parts.push({
+        text: "Extrais toutes les questions de ce document selon le schéma. Aucun corrigé séparé n'est fourni : si les bonnes réponses figurent DANS ce document (réponse inline, option mise en évidence, ou grille de corrigé), remplis 'correct' et 'explanation' à partir de celui-ci.",
+      })
     }
 
     // One retry on transient 503/timeout (Gemini explicitly asks to retry).
