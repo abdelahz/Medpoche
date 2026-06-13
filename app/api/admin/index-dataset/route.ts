@@ -6,7 +6,8 @@ import { indexDatasetItem } from '@/app/actions/dataset'
 // `indexDatasetItem` already admin-gates and writes index_status itself, so the
 // admin UI can fire this and poll the status instead of blocking on a server action.
 export const runtime = 'nodejs'
-export const maxDuration = 300 // seconds (requires Vercel Pro; self-host is unbounded)
+// 60s = Vercel Hobby max. On Pro, raise to 300 for OCR/embedding of large datasets.
+export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
   let id: number

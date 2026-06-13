@@ -12,7 +12,8 @@ import { checkAiQuota, recordAiUsage } from '@/lib/usage'
 import { PLAN_LIMITS, isUnlimited } from '@/lib/plans'
 import type { ChunkMatch, Plan } from '@/types'
 
-export const maxDuration = 120
+// 60s = Vercel Hobby max. On Pro you can raise this (up to 300) for longer answers.
+export const maxDuration = 60
 
 const MIN_SIMILARITY = 0.4
 const TOP_K = 10

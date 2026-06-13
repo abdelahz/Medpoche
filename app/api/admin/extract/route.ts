@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { extractMcqs, type GeminiSource } from '@/lib/gemini'
 
-export const maxDuration = 300
+// 60s = Vercel Hobby max. On Pro, raise to 300 for large multi-page PDF extraction.
+export const maxDuration = 60
 
 const ACCEPTED = ['application/pdf', 'image/png', 'image/jpeg', 'text/plain', 'text/markdown']
 const MAX_BYTES = 15 * 1024 * 1024 // 15 MB
