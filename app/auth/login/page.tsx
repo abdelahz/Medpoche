@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { toast } from 'sonner'
-import { AuthField, GoogleButton, AuthDivider, AuthShell } from '@/components/auth/auth-parts'
+import { AuthField, AuthShell } from '@/components/auth/auth-parts'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -40,14 +39,7 @@ export default function LoginPage() {
     router.push('/')
   }
 
-  async function handleGoogle() {
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    })
-    if (error) toast.error(error.message)
-  }
+  // NOTE: Google sign-in temporarily removed (re-enable in ~2 days). See git history.
 
   return (
     <AuthShell>
@@ -127,9 +119,6 @@ export default function LoginPage() {
           {loading ? 'Connexion…' : 'Se connecter'}
         </button>
       </form>
-
-      <AuthDivider>ou continuer avec</AuthDivider>
-      <GoogleButton onClick={handleGoogle}>Continuer avec Google</GoogleButton>
 
       <p className="text-sm text-center mt-7" style={{ color: 'var(--gray-600)' }}>
         Pas encore de compte ?{' '}

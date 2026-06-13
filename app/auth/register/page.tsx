@@ -5,13 +5,7 @@ import Link from 'next/link'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import {
-  AuthField,
-  GoogleButton,
-  AuthDivider,
-  AuthShell,
-  StrengthBar,
-} from '@/components/auth/auth-parts'
+import { AuthField, AuthShell, StrengthBar } from '@/components/auth/auth-parts'
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState('')
@@ -60,14 +54,7 @@ export default function RegisterPage() {
     setDone(true)
   }
 
-  async function handleGoogle() {
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    })
-    if (error) toast.error(error.message)
-  }
+  // NOTE: Google sign-up temporarily removed (re-enable in ~2 days). See git history.
 
   if (done) {
     return (
@@ -176,9 +163,6 @@ export default function RegisterPage() {
           {loading ? 'Création…' : 'Créer mon compte'}
         </button>
       </form>
-
-      <AuthDivider>ou continuer avec</AuthDivider>
-      <GoogleButton onClick={handleGoogle}>Continuer avec Google</GoogleButton>
 
       <p className="text-sm text-center mt-7" style={{ color: 'var(--gray-600)' }}>
         Déjà un compte ?{' '}
