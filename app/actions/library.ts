@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { isVideoType, isYoutubeId } from '@/lib/youtube'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 const BUCKET = 'library'
@@ -25,7 +26,10 @@ async function requireAdmin(
   return { ok: true }
 }
 
-/** Record a library item after the file has been uploaded to Storage. */
+/**
+ * Record a library item. `path` is a Storage path for file documents, or an
+ * 11-char YouTube video id when `type` is "Vidéo" (stored in file_url either way).
+ */
 export async function createLibraryItem(input: {
   title: string
   type: string
@@ -34,7 +38,15 @@ export async function createLibraryItem(input: {
   path: string
 }): Promise<ActionResult> {
   if (!input.title.trim()) return { success: false, error: 'Le titre est requis.' }
-  if (!input.path) return { success: false, error: 'Aucun fichier téléversé.' }
+
+  const video = isVideoType(input.type)
+  if (video) {
+    if (!isYoutubeId(input.path)) {
+      return { success: false, error: 'Lien YouTube invalide.' }
+    }
+  } else if (!input.path) {
+    return { success: false, error: 'Aucun fichier téléversé.' }
+  }
 
   const supabase = await createClient()
   const admin = await requireAdmin(supabase)
@@ -49,7 +61,8 @@ export async function createLibraryItem(input: {
   })
   if (error) {
     // Orphan-file cleanup: the row failed, so remove the just-uploaded file.
-    await supabase.storage.from(BUCKET).remove([input.path]).catch(() => {})
+    // Videos have no Storage object, so there's nothing to clean up.
+    if (!video) await supabase.storage.from(BUCKET).remove([input.path]).catch(() => {})
     return { success: false, error: error.message }
   }
 
@@ -63,8 +76,9 @@ export async function deleteLibraryItem(id: number): Promise<ActionResult> {
   const admin = await requireAdmin(supabase)
   if (!admin.ok) return { success: false, error: admin.error }
 
-  const { data: row } = await supabase.from('library').select('file_url').eq('id', id).single()
-  if (row?.file_url) {
+  const { data: row } = await supabase.from('library').select('type, file_url').eq('id', id).single()
+  // Videos keep a YouTube id in file_url, not a Storage object — nothing to remove.
+  if (row?.file_url && !isVideoType(row.type)) {
     await supabase.storage.from(BUCKET).remove([row.file_url]).catch(() => {})
   }
 

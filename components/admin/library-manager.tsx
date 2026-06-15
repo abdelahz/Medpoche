@@ -2,10 +2,11 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, Plus, Download, Trash2, Loader2, FileText } from 'lucide-react'
+import { Search, Plus, Download, Trash2, Loader2, FileText, Play } from 'lucide-react'
 import { toast } from 'sonner'
 import type { LibraryItem } from '@/types'
 import { LIBRARY_TYPES } from '@/types'
+import { isVideoType, youtubeWatchUrl } from '@/lib/youtube'
 import { deleteLibraryItem, getLibrarySignedUrl } from '@/app/actions/library'
 import { Card } from './primitives'
 import { Button } from './button'
@@ -63,6 +64,10 @@ export function LibraryManager({ items }: { items: LibraryItem[] }) {
 
   async function handleView(item: LibraryItem) {
     if (!item.file_url) return
+    if (isVideoType(item.type)) {
+      window.open(youtubeWatchUrl(item.file_url), '_blank', 'noopener')
+      return
+    }
     setViewingId(item.id)
     const res = await getLibrarySignedUrl(item.file_url)
     setViewingId(null)
@@ -184,9 +189,15 @@ export function LibraryManager({ items }: { items: LibraryItem[] }) {
                   <span className="flex items-center" style={{ gap: 10, minWidth: 0 }}>
                     <span
                       className="flex items-center justify-center flex-shrink-0"
-                      style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--gray-100)', color: 'var(--gray-600)' }}
+                      style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: 8,
+                        background: isVideoType(item.type) ? 'var(--primary-50)' : 'var(--gray-100)',
+                        color: isVideoType(item.type) ? 'var(--primary-600)' : 'var(--gray-600)',
+                      }}
                     >
-                      <FileText size={15} />
+                      {isVideoType(item.type) ? <Play size={15} /> : <FileText size={15} />}
                     </span>
                     <span className="overflow-hidden text-ellipsis whitespace-nowrap" style={{ fontSize: 13, fontWeight: 500, color: 'var(--gray-900)', minWidth: 0 }}>
                       {item.title}
@@ -214,11 +225,17 @@ export function LibraryManager({ items }: { items: LibraryItem[] }) {
                       type="button"
                       onClick={() => handleView(item)}
                       disabled={viewingId === item.id}
-                      title="Voir / télécharger"
+                      title={isVideoType(item.type) ? 'Regarder sur YouTube' : 'Voir / télécharger'}
                       className="flex items-center justify-center"
                       style={{ width: 30, height: 30, borderRadius: 8, color: 'var(--gray-600)', cursor: 'pointer' }}
                     >
-                      {viewingId === item.id ? <Loader2 size={15} className="mp-spin" /> : <Download size={15} />}
+                      {viewingId === item.id ? (
+                        <Loader2 size={15} className="mp-spin" />
+                      ) : isVideoType(item.type) ? (
+                        <Play size={15} />
+                      ) : (
+                        <Download size={15} />
+                      )}
                     </button>
                     <button
                       type="button"

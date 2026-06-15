@@ -2,10 +2,12 @@
 
 import { useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { Search, FileText, Eye } from 'lucide-react'
+import { Search, FileText, Eye, Play } from 'lucide-react'
 import type { LibraryItem } from '@/types'
 import { LIBRARY_TYPES } from '@/types'
+import { isVideoType } from '@/lib/youtube'
 import { ScreenHeader, ModuleIcon, MODULE_THEME } from './primitives'
+import { VideoViewer } from './video-viewer'
 
 // react-pdf is heavy and browser-only — load it only when a document is opened.
 const DocumentViewer = dynamic(
@@ -69,6 +71,7 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
   const [moduleFilter, setModuleFilter] = useState(ALL)
   const [coursFilter, setCoursFilter] = useState(ALL)
   const [viewing, setViewing] = useState<LibraryItem | null>(null)
+  const [viewingVideo, setViewingVideo] = useState<LibraryItem | null>(null)
 
   // Only surface filter values that actually exist in the library.
   const presentTypes = useMemo(
@@ -106,7 +109,8 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
 
   function openItem(item: LibraryItem) {
     if (!item.file_url) return
-    setViewing(item)
+    if (isVideoType(item.type)) setViewingVideo(item)
+    else setViewing(item)
   }
 
   return (
@@ -212,6 +216,7 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
           filtered.map((item) => {
             const theme = item.module ? MODULE_THEME[item.module] : undefined
             const meta = [item.type, item.module, item.subject].filter(Boolean).join(' · ')
+            const isVid = isVideoType(item.type)
             return (
               <button
                 key={item.id}
@@ -227,7 +232,14 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
                   cursor: 'pointer',
                 }}
               >
-                {item.module ? (
+                {isVid ? (
+                  <div
+                    className="flex items-center justify-center flex-shrink-0"
+                    style={{ width: 42, height: 42, borderRadius: 10, background: 'var(--primary-50)', color: 'var(--primary-600)' }}
+                  >
+                    <Play size={20} />
+                  </div>
+                ) : item.module ? (
                   <ModuleIcon module={item.module} size={42} radius={10} />
                 ) : (
                   <div
@@ -253,10 +265,10 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
                 </div>
                 <span
                   className="flex items-center justify-center flex-shrink-0"
-                  style={{ color: theme?.color ?? 'var(--gray-400)' }}
-                  title="Consulter"
+                  style={{ color: isVid ? 'var(--primary-600)' : theme?.color ?? 'var(--gray-400)' }}
+                  title={isVid ? 'Regarder' : 'Consulter'}
                 >
-                  <Eye size={18} />
+                  {isVid ? <Play size={18} /> : <Eye size={18} />}
                 </span>
               </button>
             )
@@ -265,6 +277,7 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
       </div>
 
       {viewing && <DocumentViewer item={viewing} onClose={() => setViewing(null)} />}
+      {viewingVideo && <VideoViewer item={viewingVideo} onClose={() => setViewingVideo(null)} />}
     </div>
   )
 }

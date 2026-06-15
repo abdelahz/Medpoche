@@ -179,7 +179,7 @@ export const COURS_BY_MATIERE: Record<string, string[]> = {
 export const MODULES = ['Mathématiques', 'Chimie', 'Physique', 'SVT'] as const
 export type Module = (typeof MODULES)[number]
 
-export const LIBRARY_TYPES = ['Cours', 'Résumé', 'QCMs', 'Fiche', 'Annale', 'Autre'] as const
+export const LIBRARY_TYPES = ['Cours', 'Résumé', 'QCMs', 'Fiche', 'Annale', 'Vidéo', 'Autre'] as const
 export type LibraryType = (typeof LIBRARY_TYPES)[number]
 
 export interface LibraryItem {

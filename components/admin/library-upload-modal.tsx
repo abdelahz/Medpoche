@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { createLibraryItem } from '@/app/actions/library'
 import { LIBRARY_TYPES, MODULES, COURS_BY_MATIERE } from '@/types'
+import { isVideoType, extractYoutubeId } from '@/lib/youtube'
 import { Button } from './button'
 
 const ACCEPT = '.pdf,.png,.jpg,.jpeg'
@@ -45,9 +46,13 @@ export function LibraryUploadModal({
   const [module, setModule] = useState('')
   const [subject, setSubject] = useState('')
   const [file, setFile] = useState<File | null>(null)
+  const [videoUrl, setVideoUrl] = useState('')
   const [dragging, setDragging] = useState(false)
   const [busy, setBusy] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const video = isVideoType(type)
+  const previewId = video ? extractYoutubeId(videoUrl) : null
 
   function pickFile(f: File) {
     if (!/\.(pdf|png|jpe?g)$/i.test(f.name)) {
@@ -63,6 +68,33 @@ export function LibraryUploadModal({
       toast.error('Le titre est requis.')
       return
     }
+
+    // ── Video: store the YouTube id, no Storage upload ──
+    if (video) {
+      const id = extractYoutubeId(videoUrl)
+      if (!id) {
+        toast.error('Lien YouTube invalide. Collez l’URL d’une vidéo YouTube.')
+        return
+      }
+      setBusy(true)
+      const res = await createLibraryItem({
+        title,
+        type,
+        module: module || null,
+        subject: subject.trim() || null,
+        path: id,
+      })
+      setBusy(false)
+      if (res.success) {
+        toast.success('Vidéo ajoutée à la bibliothèque.')
+        onDone()
+      } else {
+        toast.error(res.error)
+      }
+      return
+    }
+
+    // ── File document ──
     if (!file) {
       toast.error('Veuillez sélectionner un fichier.')
       return
@@ -132,19 +164,19 @@ export function LibraryUploadModal({
         {/* Body */}
         <div className="overflow-y-auto" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <label style={labelStyle}>Titre</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle} placeholder="Ex. Cours — Thermochimie" />
-          </div>
-
-          <div>
             <label style={labelStyle}>Type</label>
             <select value={type} onChange={(e) => setType(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
               {LIBRARY_TYPES.map((t) => (
                 <option key={t} value={t}>
-                  {t}
+                  {t === 'Vidéo' ? 'Vidéo (YouTube)' : t}
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label style={labelStyle}>Titre</label>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle} placeholder="Ex. Cours — Thermochimie" />
           </div>
 
           <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -180,10 +212,57 @@ export function LibraryUploadModal({
             </div>
           </div>
 
-          {/* File drop */}
-          <div>
-            <label style={labelStyle}>Fichier</label>
-            {file ? (
+          {/* YouTube video */}
+          {video ? (
+            <div>
+              <label style={labelStyle}>Lien YouTube</label>
+              <input
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=…"
+                style={inputStyle}
+                inputMode="url"
+                autoCapitalize="off"
+                spellCheck={false}
+              />
+              {previewId ? (
+                <div
+                  style={{
+                    position: 'relative',
+                    marginTop: 10,
+                    width: '100%',
+                    aspectRatio: '16 / 9',
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    background: 'var(--gray-100)',
+                    border: '0.5px solid var(--gray-200)',
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- external YouTube thumbnail, no optimization needed */}
+                  <img
+                    src={`https://i.ytimg.com/vi/${previewId}/hqdefault.jpg`}
+                    alt="Aperçu de la vidéo"
+                    onError={(e) => {
+                      ;(e.currentTarget as HTMLImageElement).style.display = 'none'
+                    }}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
+                </div>
+              ) : videoUrl.trim() ? (
+                <div style={{ fontSize: 12, color: 'var(--danger-text)', marginTop: 6 }}>
+                  Lien non reconnu — collez l’URL d’une vidéo YouTube.
+                </div>
+              ) : (
+                <div style={{ fontSize: 12, color: 'var(--gray-600)', marginTop: 6 }}>
+                  Collez l’URL d’une vidéo YouTube (watch, youtu.be, /embed ou Short).
+                </div>
+              )}
+            </div>
+          ) : (
+            /* File drop */
+            <div>
+              <label style={labelStyle}>Fichier</label>
+              {file ? (
               <div
                 className="flex items-center"
                 style={{ gap: 10, border: '0.5px solid var(--gray-200)', borderRadius: 12, padding: '14px 16px' }}
@@ -249,7 +328,8 @@ export function LibraryUploadModal({
                 <div style={{ fontSize: 12, color: 'var(--gray-600)', marginTop: 3 }}>PDF, PNG ou JPG — max 50 Mo</div>
               </div>
             )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
