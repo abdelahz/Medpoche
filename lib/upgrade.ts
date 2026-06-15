@@ -3,12 +3,12 @@
  * billing yet): every "améliorer" CTA opens a WhatsApp chat with a pre-filled
  * message so the student can ask to upgrade and pay.
  *
- * Set the real number in `.env.local` as NEXT_PUBLIC_WHATSAPP_NUMBER —
+ * The number below (0706335414 → international 212706335414) is the default.
+ * It can be overridden per-environment with NEXT_PUBLIC_WHATSAPP_NUMBER —
  * international format, digits only, no "+" or spaces (e.g. 212612345678).
- * The placeholder below is replaced at build time when the env var is set.
  */
 export const WHATSAPP_NUMBER =
-  process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/[^0-9]/g, '') || '212600000000'
+  process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/[^0-9]/g, '') || '212706335414'
 
 /** Pre-filled WhatsApp upgrade message (optionally naming the target plan). */
 export function whatsappUpgradeUrl(targetPlan?: string): string {
