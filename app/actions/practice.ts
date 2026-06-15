@@ -102,6 +102,53 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
+type PoolRow = Row & { year: number | null; exam_blanc: string | null; position: number | null }
+
+/** Drop the grouping-only columns, leaving a clean practice Row. */
+function stripPoolRow(r: PoolRow): Row {
+  return {
+    id: r.id,
+    question: r.question,
+    option_a: r.option_a,
+    option_b: r.option_b,
+    option_c: r.option_c,
+    option_d: r.option_d,
+    option_e: r.option_e,
+    correct: r.correct,
+    explanation: r.explanation,
+    module: r.module,
+    has_list: r.has_list,
+    image_required: r.image_required,
+  }
+}
+
+/**
+ * Group rows by their source exam (année + examen blanc), each group ordered by
+ * `position` so a same-exam sequence keeps its original order. Questions with no
+ * exam source each form a singleton group so they still shuffle freely. The
+ * caller shuffles the GROUPS — keeping same-exam runs intact while randomising
+ * which exam's block comes first.
+ */
+function groupBySourceExam(rows: PoolRow[]): Row[][] {
+  const byExam = new Map<string, PoolRow[]>()
+  const singletons: Row[][] = []
+  for (const r of rows) {
+    const hasExam = r.year != null || (r.exam_blanc != null && r.exam_blanc !== '')
+    if (!hasExam) {
+      singletons.push([stripPoolRow(r)])
+      continue
+    }
+    const key = `${r.year ?? ''}|${r.exam_blanc ?? ''}`
+    const g = byExam.get(key)
+    if (g) g.push(r)
+    else byExam.set(key, [r])
+  }
+  const examGroups = Array.from(byExam.values()).map((g) =>
+    g.sort((a, b) => (a.position ?? Infinity) - (b.position ?? Infinity)).map(stripPoolRow)
+  )
+  return [...examGroups, ...singletons]
+}
+
 /**
  * Fetch ready QCMs for a practice session (shuffled). RLS already restricts
  * non-admins to status='ready', so students only ever get published questions.
@@ -139,10 +186,21 @@ export async function getPracticeQuestions(
     return capToRemaining(marked, remaining)
   }
 
-  // Practice modes (par chapitre, Les 4, Série rapide) → shuffled subset.
-  const { data } = await query.limit(POOL_LIMIT)
-  const marked = await markBookmarked(supabase, user.id, (data ?? []) as Row[])
-  return capToRemaining(shuffle(marked).slice(0, cap), remaining)
+  // Practice modes hors examen (par cours, par matière) : on garde les questions
+  // d'un même examen dans leur ordre d'origine et on ne mélange que l'ordre des
+  // examens entre eux — une suite de questions liées d'un même examen n'est jamais
+  // éparpillée. (Le plafond `cap` peut tronquer le dernier bloc — compromis assumé.)
+  let groupQuery = supabase
+    .from('mcqs')
+    .select(`${PRACTICE_COLS}, year, exam_blanc, position`)
+    .eq('status', 'ready')
+  if (filter.module) groupQuery = groupQuery.eq('module', filter.module)
+  if (filter.subject) groupQuery = groupQuery.eq('subject', filter.subject)
+  const { data } = await groupQuery.limit(POOL_LIMIT)
+
+  const ordered = shuffle(groupBySourceExam((data ?? []) as PoolRow[])).flat().slice(0, cap)
+  const marked = await markBookmarked(supabase, user.id, ordered)
+  return capToRemaining(marked, remaining)
 }
 
 const PER_MATIERE = 20 // questions per matière in a full "Les 4" exam session
