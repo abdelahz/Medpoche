@@ -33,6 +33,10 @@ function sanitize(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]/g, '_')
 }
 
+function titleFromName(name: string) {
+  return name.replace(/\.[^.]+$/, '')
+}
+
 export function DatasetUploadModal({
   onClose,
   onDone,
@@ -42,51 +46,77 @@ export function DatasetUploadModal({
 }) {
   const [title, setTitle] = useState('')
   const [subjects, setSubjects] = useState<string[]>([])
-  const [file, setFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<File[]>([])
   const [dragging, setDragging] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [progress, setProgress] = useState({ done: 0, total: 0 })
   const inputRef = useRef<HTMLInputElement>(null)
 
-  function pickFile(f: File) {
-    if (!/\.(pdf|png|jpe?g|txt|md)$/i.test(f.name)) {
-      toast.error('Format non supporté. Utilisez PDF, image, TXT ou MD.')
-      return
+  function addFiles(list: FileList | File[]) {
+    const incoming = Array.from(list)
+    const valid = incoming.filter((f) => /\.(pdf|png|jpe?g|txt|md)$/i.test(f.name))
+    const rejected = incoming.length - valid.length
+    if (rejected > 0) {
+      toast.error(`${rejected} fichier(s) ignoré(s) : format non supporté (PDF, image, TXT ou MD).`)
     }
-    setFile(f)
-    if (!title.trim()) setTitle(f.name.replace(/\.[^.]+$/, ''))
+    if (valid.length === 0) return
+    setFiles((prev) => {
+      const seen = new Set(prev.map((p) => `${p.name}:${p.size}`))
+      const merged = [...prev]
+      for (const f of valid) {
+        const key = `${f.name}:${f.size}`
+        if (!seen.has(key)) {
+          seen.add(key)
+          merged.push(f)
+        }
+      }
+      return merged
+    })
+  }
+
+  function removeAt(i: number) {
+    setFiles((prev) => prev.filter((_, idx) => idx !== i))
   }
 
   async function handleSubmit() {
-    if (!title.trim()) {
-      toast.error('Le titre est requis.')
-      return
-    }
-    if (!file) {
-      toast.error('Veuillez sélectionner un fichier.')
+    if (files.length === 0) {
+      toast.error('Veuillez sélectionner au moins un fichier.')
       return
     }
     setBusy(true)
+    setProgress({ done: 0, total: files.length })
 
     const supabase = createClient()
-    const path = `${crypto.randomUUID()}-${sanitize(file.name)}`
+    const subject = subjects.join(', ') || null
+    let ok = 0
+    const failed: string[] = []
 
-    const { error: upErr } = await supabase.storage.from('dataset').upload(path, file)
-    if (upErr) {
-      setBusy(false)
-      toast.error(`Échec du téléversement : ${upErr.message}`)
-      return
+    for (const file of files) {
+      const titleForFile =
+        files.length === 1 && title.trim() ? title.trim() : titleFromName(file.name)
+      const path = `${crypto.randomUUID()}-${sanitize(file.name)}`
+
+      const { error: upErr } = await supabase.storage.from('dataset').upload(path, file)
+      if (upErr) {
+        failed.push(file.name)
+        setProgress((p) => ({ ...p, done: p.done + 1 }))
+        continue
+      }
+
+      const res = await createDatasetItem({ title: titleForFile, subject, path })
+      if (res.success) {
+        ok++
+      } else {
+        failed.push(file.name)
+        await supabase.storage.from('dataset').remove([path]).catch(() => {})
+      }
+      setProgress((p) => ({ ...p, done: p.done + 1 }))
     }
 
-    const res = await createDatasetItem({ title, subject: subjects.join(', ') || null, path })
     setBusy(false)
-
-    if (res.success) {
-      toast.success('Document ajouté au dataset.')
-      onDone()
-    } else {
-      await supabase.storage.from('dataset').remove([path]).catch(() => {})
-      toast.error(res.error)
-    }
+    if (ok > 0) toast.success(`${ok} document${ok > 1 ? 's' : ''} ajouté${ok > 1 ? 's' : ''} au dataset.`)
+    if (failed.length > 0) toast.error(`Échec : ${failed.join(', ')}`)
+    if (ok > 0) onDone()
   }
 
   return (
@@ -120,10 +150,21 @@ export function DatasetUploadModal({
         </div>
 
         <div className="overflow-y-auto" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div>
-            <label style={labelStyle}>Titre</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle} placeholder="Ex. Référentiel — Biochimie" />
-          </div>
+          {files.length <= 1 ? (
+            <div>
+              <label style={labelStyle}>Titre {files.length === 1 ? '' : '(optionnel)'}</label>
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                style={inputStyle}
+                placeholder="Ex. Référentiel — Biochimie"
+              />
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: 'var(--gray-600)' }}>
+              Chaque document prendra le nom de son fichier comme titre.
+            </div>
+          )}
 
           <div>
             <label style={labelStyle}>Matière(s)</label>
@@ -131,31 +172,43 @@ export function DatasetUploadModal({
           </div>
 
           <div>
-            <label style={labelStyle}>Fichier</label>
-            {file ? (
+            <label style={labelStyle}>
+              Fichiers{files.length > 0 ? ` (${files.length})` : ''}
+            </label>
+
+            {files.length > 0 && (
               <div
-                className="flex items-center"
-                style={{ gap: 10, border: '0.5px solid var(--gray-200)', borderRadius: 12, padding: '14px 16px' }}
+                style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10, maxHeight: 220, overflowY: 'auto' }}
               >
-                <div
-                  className="flex items-center justify-center flex-shrink-0"
-                  style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--success-bg)', color: 'var(--success-text)' }}
-                >
-                  <CheckCircle2 size={18} />
-                </div>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div className="overflow-hidden text-ellipsis whitespace-nowrap" style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-900)' }}>
-                    {file.name}
+                {files.map((f, i) => (
+                  <div
+                    key={`${f.name}-${i}`}
+                    className="flex items-center"
+                    style={{ gap: 10, border: '0.5px solid var(--gray-200)', borderRadius: 12, padding: '10px 14px' }}
+                  >
+                    <div
+                      className="flex items-center justify-center flex-shrink-0"
+                      style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--success-bg)', color: 'var(--success-text)' }}
+                    >
+                      <CheckCircle2 size={16} />
+                    </div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div className="overflow-hidden text-ellipsis whitespace-nowrap" style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-900)' }}>
+                        {f.name}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--gray-600)' }}>{(f.size / 1024 / 1024).toFixed(1)} Mo</div>
+                    </div>
+                    {!busy && (
+                      <button onClick={() => removeAt(i)} className="flex" style={{ color: 'var(--gray-400)', cursor: 'pointer' }}>
+                        <X size={16} />
+                      </button>
+                    )}
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--gray-600)' }}>{(file.size / 1024 / 1024).toFixed(1)} Mo</div>
-                </div>
-                {!busy && (
-                  <button onClick={() => setFile(null)} className="flex" style={{ color: 'var(--gray-400)', cursor: 'pointer' }}>
-                    <X size={16} />
-                  </button>
-                )}
+                ))}
               </div>
-            ) : (
+            )}
+
+            {!busy && (
               <div
                 onDragOver={(e) => {
                   e.preventDefault()
@@ -165,15 +218,14 @@ export function DatasetUploadModal({
                 onDrop={(e) => {
                   e.preventDefault()
                   setDragging(false)
-                  const f = e.dataTransfer.files?.[0]
-                  if (f) pickFile(f)
+                  if (e.dataTransfer.files?.length) addFiles(e.dataTransfer.files)
                 }}
                 onClick={() => inputRef.current?.click()}
                 className="flex flex-col items-center justify-center text-center"
                 style={{
                   border: `1.5px dashed ${dragging ? 'var(--primary-500)' : 'var(--gray-200)'}`,
                   borderRadius: 12,
-                  padding: '26px 18px',
+                  padding: '22px 18px',
                   cursor: 'pointer',
                   transition: 'border-color 150ms ease',
                 }}
@@ -182,9 +234,9 @@ export function DatasetUploadModal({
                   ref={inputRef}
                   type="file"
                   accept={ACCEPT}
+                  multiple
                   onChange={(e) => {
-                    const f = e.target.files?.[0]
-                    if (f) pickFile(f)
+                    if (e.target.files?.length) addFiles(e.target.files)
                     e.target.value = ''
                   }}
                   style={{ display: 'none' }}
@@ -193,9 +245,11 @@ export function DatasetUploadModal({
                   <UploadCloud size={20} />
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-900)', marginTop: 10 }}>
-                  Glissez un fichier ou cliquez
+                  {files.length > 0 ? 'Ajouter d’autres fichiers' : 'Glissez des fichiers ou cliquez'}
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--gray-600)', marginTop: 3 }}>PDF, image, TXT ou MD — max 50 Mo</div>
+                <div style={{ fontSize: 12, color: 'var(--gray-600)', marginTop: 3 }}>
+                  PDF, image, TXT ou MD — max 50 Mo · sélection multiple
+                </div>
               </div>
             )}
           </div>
@@ -208,9 +262,11 @@ export function DatasetUploadModal({
           <Button variant="ghost" onClick={onClose} disabled={busy}>
             Annuler
           </Button>
-          <Button onClick={handleSubmit} disabled={busy}>
+          <Button onClick={handleSubmit} disabled={busy || files.length === 0}>
             {busy ? <Loader2 size={14} className="mp-spin" /> : <FileText size={14} />}
-            {busy ? 'Ajout…' : 'Ajouter'}
+            {busy
+              ? `Ajout… ${progress.done}/${progress.total}`
+              : `Ajouter${files.length > 1 ? ` (${files.length})` : ''}`}
           </Button>
         </div>
       </div>
