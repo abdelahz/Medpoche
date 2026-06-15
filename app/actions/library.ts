@@ -36,6 +36,8 @@ export async function createLibraryItem(input: {
   module: string | null
   subject: string | null
   path: string
+  playlist?: string | null
+  position?: number | null
 }): Promise<ActionResult> {
   if (!input.title.trim()) return { success: false, error: 'Le titre est requis.' }
 
@@ -58,6 +60,9 @@ export async function createLibraryItem(input: {
     module: input.module?.trim() || null,
     subject: input.subject?.trim() || null,
     file_url: input.path,
+    // Playlist grouping is video-only; ignored for file documents.
+    playlist: video ? input.playlist?.trim() || null : null,
+    position: video && typeof input.position === 'number' ? input.position : null,
   })
   if (error) {
     // Orphan-file cleanup: the row failed, so remove the just-uploaded file.

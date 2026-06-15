@@ -37,9 +37,11 @@ function sanitize(name: string) {
 export function LibraryUploadModal({
   onClose,
   onDone,
+  existingPlaylists = [],
 }: {
   onClose: () => void
   onDone: () => void
+  existingPlaylists?: string[]
 }) {
   const [title, setTitle] = useState('')
   const [type, setType] = useState<string>(LIBRARY_TYPES[0])
@@ -47,6 +49,8 @@ export function LibraryUploadModal({
   const [subject, setSubject] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [videoUrl, setVideoUrl] = useState('')
+  const [playlist, setPlaylist] = useState('')
+  const [position, setPosition] = useState('')
   const [dragging, setDragging] = useState(false)
   const [busy, setBusy] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -83,6 +87,8 @@ export function LibraryUploadModal({
         module: module || null,
         subject: subject.trim() || null,
         path: id,
+        playlist: playlist.trim() || null,
+        position: position.trim() ? Number(position) : null,
       })
       setBusy(false)
       if (res.success) {
@@ -257,6 +263,34 @@ export function LibraryUploadModal({
                   Collez l’URL d’une vidéo YouTube (watch, youtu.be, /embed ou Short).
                 </div>
               )}
+
+              <div className="grid" style={{ gridTemplateColumns: '1fr 96px', gap: 12, marginTop: 14 }}>
+                <div>
+                  <label style={labelStyle}>Playlist (optionnel)</label>
+                  <input
+                    value={playlist}
+                    onChange={(e) => setPlaylist(e.target.value)}
+                    list="library-playlists"
+                    placeholder="Ex. Mécanique — Chapitre 1"
+                    style={inputStyle}
+                  />
+                  <datalist id="library-playlists">
+                    {existingPlaylists.map((p) => (
+                      <option key={p} value={p} />
+                    ))}
+                  </datalist>
+                </div>
+                <div>
+                  <label style={labelStyle}>Ordre</label>
+                  <input
+                    value={position}
+                    onChange={(e) => setPosition(e.target.value.replace(/[^0-9]/g, ''))}
+                    inputMode="numeric"
+                    placeholder="1"
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
             </div>
           ) : (
             /* File drop */

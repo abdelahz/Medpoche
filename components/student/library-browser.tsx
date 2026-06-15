@@ -2,12 +2,13 @@
 
 import { useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { Search, FileText, Eye, Play } from 'lucide-react'
+import { Search, FileText, Eye, Play, ListVideo } from 'lucide-react'
 import type { LibraryItem } from '@/types'
 import { LIBRARY_TYPES } from '@/types'
 import { isVideoType } from '@/lib/youtube'
 import { ScreenHeader, ModuleIcon, MODULE_THEME } from './primitives'
 import { VideoViewer } from './video-viewer'
+import { PlaylistViewer } from './playlist-viewer'
 
 // react-pdf is heavy and browser-only — load it only when a document is opened.
 const DocumentViewer = dynamic(
@@ -72,6 +73,7 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
   const [coursFilter, setCoursFilter] = useState(ALL)
   const [viewing, setViewing] = useState<LibraryItem | null>(null)
   const [viewingVideo, setViewingVideo] = useState<LibraryItem | null>(null)
+  const [openPlaylist, setOpenPlaylist] = useState<{ name: string; videos: LibraryItem[] } | null>(null)
 
   // Only surface filter values that actually exist in the library.
   const presentTypes = useMemo(
@@ -93,11 +95,45 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
       if (typeFilter && it.type !== typeFilter) return false
       if (moduleFilter && it.module !== moduleFilter) return false
       if (coursFilter && it.subject !== coursFilter) return false
-      if (q && !`${it.title} ${it.module ?? ''} ${it.subject ?? ''}`.toLowerCase().includes(q))
+      if (
+        q &&
+        !`${it.title} ${it.module ?? ''} ${it.subject ?? ''} ${it.playlist ?? ''}`
+          .toLowerCase()
+          .includes(q)
+      )
         return false
       return true
     })
   }, [items, query, typeFilter, moduleFilter, coursFilter])
+
+  // Split results into video playlists (grouped + ordered) and everything else.
+  const { playlists, looseItems } = useMemo(() => {
+    const groups = new Map<string, LibraryItem[]>()
+    const loose: LibraryItem[] = []
+    for (const it of filtered) {
+      const pl = isVideoType(it.type) && it.playlist?.trim() ? it.playlist.trim() : null
+      if (pl) {
+        const g = groups.get(pl)
+        if (g) g.push(it)
+        else groups.set(pl, [it])
+      } else {
+        loose.push(it)
+      }
+    }
+    const playlists = Array.from(groups.entries())
+      .map(([name, vids]) => ({
+        name,
+        videos: vids
+          .slice()
+          .sort(
+            (a, b) =>
+              (a.position ?? Infinity) - (b.position ?? Infinity) ||
+              a.title.localeCompare(b.title, 'fr')
+          ),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'fr'))
+    return { playlists, looseItems: loose }
+  }, [filtered])
 
   function changeModule(value: string) {
     setModuleFilter(value)
@@ -213,10 +249,44 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
             </div>
           </div>
         ) : (
-          filtered.map((item) => {
-            const theme = item.module ? MODULE_THEME[item.module] : undefined
-            const meta = [item.type, item.module, item.subject].filter(Boolean).join(' · ')
-            const isVid = isVideoType(item.type)
+          <>
+            {playlists.map((g) => {
+              const mod = g.videos.find((v) => v.module)?.module ?? null
+              const plMeta = [`${g.videos.length} vidéo${g.videos.length > 1 ? 's' : ''}`, mod]
+                .filter(Boolean)
+                .join(' · ')
+              return (
+                <button
+                  key={`pl-${g.name}`}
+                  type="button"
+                  onClick={() => setOpenPlaylist(g)}
+                  className="flex items-center w-full text-left"
+                  style={{ gap: 12, padding: 14, borderRadius: 16, border: '0.5px solid var(--gray-200)', background: '#fff', cursor: 'pointer' }}
+                >
+                  <div
+                    className="flex items-center justify-center flex-shrink-0"
+                    style={{ width: 42, height: 42, borderRadius: 10, background: 'var(--primary-50)', color: 'var(--primary-600)' }}
+                  >
+                    <ListVideo size={20} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="overflow-hidden text-ellipsis whitespace-nowrap" style={{ fontSize: 14, fontWeight: 600, color: 'var(--gray-900)' }}>
+                      {g.name}
+                    </div>
+                    <div className="overflow-hidden text-ellipsis whitespace-nowrap" style={{ fontSize: 12, color: 'var(--gray-600)', marginTop: 2 }}>
+                      Playlist · {plMeta}
+                    </div>
+                  </div>
+                  <span className="flex items-center justify-center flex-shrink-0" style={{ color: 'var(--primary-600)' }} title="Ouvrir la playlist">
+                    <Play size={18} />
+                  </span>
+                </button>
+              )
+            })}
+            {looseItems.map((item) => {
+              const theme = item.module ? MODULE_THEME[item.module] : undefined
+              const meta = [item.type, item.module, item.subject].filter(Boolean).join(' · ')
+              const isVid = isVideoType(item.type)
             return (
               <button
                 key={item.id}
@@ -271,13 +341,21 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
                   {isVid ? <Play size={18} /> : <Eye size={18} />}
                 </span>
               </button>
-            )
-          })
+                )
+              })}
+          </>
         )}
       </div>
 
       {viewing && <DocumentViewer item={viewing} onClose={() => setViewing(null)} />}
       {viewingVideo && <VideoViewer item={viewingVideo} onClose={() => setViewingVideo(null)} />}
+      {openPlaylist && (
+        <PlaylistViewer
+          name={openPlaylist.name}
+          videos={openPlaylist.videos}
+          onClose={() => setOpenPlaylist(null)}
+        />
+      )}
     </div>
   )
 }

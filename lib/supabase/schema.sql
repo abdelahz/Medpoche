@@ -86,12 +86,16 @@ create table library (
   type text not null,
   module text,        -- matière: Mathématiques | Chimie | Physique | SVT
   subject text,       -- cours / chapitre (within a matière), mirrors mcqs
-  file_url text,
+  file_url text,      -- Storage path, OR a YouTube video id when type = 'Vidéo'
+  playlist text,      -- optional playlist name (groups videos, type = 'Vidéo')
+  position int,       -- order within a playlist
   created_at timestamp default now()
 );
 
 -- Migration for an existing DB (safe to re-run):
--- alter table library add column if not exists module text;
+alter table library add column if not exists module text;
+alter table library add column if not exists playlist text;
+alter table library add column if not exists position int;
 
 -- DATASET (AI chatbot knowledge base)
 -- The RAG vector table (dataset_chunks), pgvector, and the match_chunks()

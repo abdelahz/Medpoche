@@ -56,11 +56,21 @@ export function LibraryManager({ items }: { items: LibraryItem[] }) {
     const q = query.trim().toLowerCase()
     return items.filter((it) => {
       if (typeFilter && it.type !== typeFilter) return false
-      if (q && !`${it.title} ${it.module ?? ''} ${it.subject ?? ''}`.toLowerCase().includes(q))
+      if (
+        q &&
+        !`${it.title} ${it.module ?? ''} ${it.subject ?? ''} ${it.playlist ?? ''}`
+          .toLowerCase()
+          .includes(q)
+      )
         return false
       return true
     })
   }, [items, query, typeFilter])
+
+  const existingPlaylists = useMemo(
+    () => Array.from(new Set(items.map((it) => it.playlist).filter((p): p is string => !!p))).sort(),
+    [items]
+  )
 
   async function handleView(item: LibraryItem) {
     if (!item.file_url) return
@@ -257,6 +267,7 @@ export function LibraryManager({ items }: { items: LibraryItem[] }) {
 
       {showUpload && (
         <LibraryUploadModal
+          existingPlaylists={existingPlaylists}
           onClose={() => setShowUpload(false)}
           onDone={() => {
             setShowUpload(false)

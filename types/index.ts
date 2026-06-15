@@ -189,6 +189,8 @@ export interface LibraryItem {
   module: string | null
   subject: string | null
   file_url: string | null
+  playlist: string | null
+  position: number | null
   created_at: string
 }
 

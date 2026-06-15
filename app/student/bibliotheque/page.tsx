@@ -28,7 +28,7 @@ export default async function BibliothequePage() {
 
   const { data } = await supabase
     .from('library')
-    .select('id, title, type, module, subject, file_url, created_at')
+    .select('id, title, type, module, subject, file_url, playlist, position, created_at')
     .order('created_at', { ascending: false })
 
   const items = (data ?? []) as LibraryItem[]
