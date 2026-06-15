@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import type { ReactNode } from 'react'
-import { whatsappUpgradeUrl } from '@/lib/upgrade'
+import { whatsappUpgradeUrl, INSTAGRAM_GRADIENT } from '@/lib/upgrade'
 
 /** Centered max-width container. */
 export function Container({
@@ -47,7 +47,7 @@ const CTA_STYLE: Record<CtaVariant, React.CSSProperties> = {
   primary: { background: 'var(--grad-primary)', color: '#fff', boxShadow: '0 8px 22px rgba(76,123,255,0.35)' },
   ghost: { background: 'transparent', color: 'var(--gray-900)', border: '0.5px solid var(--gray-200)' },
   white: { background: '#fff', color: 'var(--primary-600)', boxShadow: '0 8px 22px rgba(16,24,40,0.12)' },
-  whatsapp: { background: '#25D366', color: '#fff', boxShadow: '0 8px 22px rgba(37,211,102,0.32)' },
+  whatsapp: { background: INSTAGRAM_GRADIENT, color: '#fff', boxShadow: '0 8px 22px rgba(221,42,123,0.32)' },
   accent: { background: 'var(--grad-accent)', color: '#fff', boxShadow: '0 10px 26px rgba(124,92,255,0.42)' },
 }
 
