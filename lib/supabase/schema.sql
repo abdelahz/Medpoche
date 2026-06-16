@@ -391,3 +391,39 @@ create policy "Admins manage own extraction jobs"
 -- A role needs a table-level GRANT before RLS is evaluated, or PostgREST
 -- returns "permission denied for table" (42501).
 grant all on extraction_jobs to anon, authenticated, service_role;
+
+-- ============================================================
+-- REPORTS — student "Signaler" (content error reports). Created from any
+-- content surface (QCM, IA, bibliothèque). ADMINS ONLY read/manage them:
+-- there is deliberately NO student SELECT policy, so reports never surface
+-- in student dashboards. Re-runnable.
+-- ============================================================
+create table if not exists reports (
+  id bigserial primary key,
+  user_id uuid references profiles(id) on delete set null,
+  context text not null,                  -- 'mcq' | 'ai' | 'library' | 'autre'
+  context_id text,                        -- reported item id (mcq/library/chat id…), or null
+  label text,                             -- short human label (question snippet, doc title…)
+  message text,                           -- optional free-text description
+  status text not null default 'open',    -- 'open' | 'resolved'
+  created_at timestamptz default now()
+);
+create index if not exists reports_status_idx on reports(status, created_at desc);
+
+alter table reports enable row level security;
+
+-- Any authenticated user may CREATE their own report…
+drop policy if exists "Users create reports" on reports;
+create policy "Users create reports"
+  on reports for insert to authenticated with check (auth.uid() = user_id);
+
+-- …but ONLY admins can read / resolve / delete them (never shown to students).
+drop policy if exists "Admins read reports" on reports;
+create policy "Admins read reports" on reports for select using (public.is_admin());
+drop policy if exists "Admins update reports" on reports;
+create policy "Admins update reports" on reports for update using (public.is_admin());
+drop policy if exists "Admins delete reports" on reports;
+create policy "Admins delete reports" on reports for delete using (public.is_admin());
+
+grant all on reports to anon, authenticated, service_role;
+grant usage, select on sequence reports_id_seq to anon, authenticated, service_role;

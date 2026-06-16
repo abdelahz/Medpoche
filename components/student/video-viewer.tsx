@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { X, FileWarning } from 'lucide-react'
 import type { LibraryItem } from '@/types'
 import { youtubeEmbedUrl, isYoutubeId } from '@/lib/youtube'
+import { ReportButton } from '@/components/shared/report-button'
 
 /** Full-screen modal that embeds a library "Vidéo" item (YouTube). */
 export function VideoViewer({ item, onClose }: { item: LibraryItem; onClose: () => void }) {
@@ -39,6 +40,9 @@ export function VideoViewer({ item, onClose }: { item: LibraryItem; onClose: () 
             {[item.type, item.module, item.subject].filter(Boolean).join(' · ')}
           </div>
         </div>
+        <span className="flex items-center justify-center flex-shrink-0" style={{ width: 36, height: 36 }}>
+          <ReportButton context="library" contextId={item.id} label={item.title} tone="var(--gray-500)" size={18} />
+        </span>
         <button
           type="button"
           onClick={onClose}

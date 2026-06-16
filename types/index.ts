@@ -182,6 +182,43 @@ export type Module = (typeof MODULES)[number]
 export const LIBRARY_TYPES = ['Cours', 'Résumé', 'QCMs', 'Fiche', 'Annale', 'Vidéo', 'Autre'] as const
 export type LibraryType = (typeof LIBRARY_TYPES)[number]
 
+/** Where a "Signaler" report came from. */
+export type ReportContext = 'mcq' | 'ai' | 'library' | 'autre'
+
+/** A student-submitted content error report (admin-only; never shown to students). */
+export interface Report {
+  id: number
+  user_id: string | null
+  context: ReportContext
+  context_id: string | null
+  label: string | null
+  message: string | null
+  status: 'open' | 'resolved'
+  created_at: string
+}
+
+/** The reported item's live identifying details, joined for the admin view. */
+export type ReportDetail =
+  | {
+      kind: 'mcq'
+      module: string | null
+      subject: string | null
+      year: number | null
+      exam_blanc: string | null
+      position: number | null
+      question: string
+      href: string
+    }
+  | { kind: 'library'; title: string; type: string; module: string | null; subject: string | null }
+  | { kind: 'ai'; question: string | null }
+  | null
+
+/** A report enriched with reporter + the source item's details (admin signalements). */
+export interface ReportRow extends Report {
+  reporter: string | null
+  detail: ReportDetail
+}
+
 export interface LibraryItem {
   id: number
   title: string

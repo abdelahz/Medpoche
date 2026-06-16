@@ -7,6 +7,7 @@ import { usePracticeStore } from '@/lib/store/practice'
 import { recordAttempt, getSessionWrapup, type SessionWrapup } from '@/app/actions/practice'
 import { toggleBookmark } from '@/app/actions/bookmarks'
 import { MCQRenderer } from '@/components/shared/mcq-renderer'
+import { ReportButton } from '@/components/shared/report-button'
 import { DAILY_GOAL, levelFromXp } from '@/lib/gamification'
 import { MODULE_THEME } from './primitives'
 
@@ -611,6 +612,7 @@ export function PracticeRunner({ onExit }: { onExit: () => void }) {
           >
             <Bookmark size={18} fill={isBookmarked ? 'var(--primary-500)' : 'none'} />
           </button>
+          <ReportButton context="mcq" contextId={q.id} label={q.question.slice(0, 160)} size={17} />
         </div>
       </div>
 

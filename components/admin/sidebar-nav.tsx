@@ -9,6 +9,7 @@ import {
   BookOpen,
   Database,
   Users,
+  Flag,
   BarChart2,
   Settings,
 } from 'lucide-react'
@@ -26,18 +27,50 @@ const navItems: NavItem[] = [
   { href: '/admin/bibliotheque', label: 'Bibliothèque', icon: BookOpen },
   { href: '/admin/dataset', label: 'Dataset IA', icon: Database },
   { href: '/admin/etudiants', label: 'Étudiants', icon: Users },
+  { href: '/admin/signalements', label: 'Signalements', icon: Flag },
   { href: '/admin/analytics', label: 'Analytiques', icon: BarChart2 },
   { href: '/admin/parametres', label: 'Paramètres', icon: Settings },
 ]
+
+function Badge({ count, dot = false }: { count: number; dot?: boolean }) {
+  if (count <= 0) return null
+  if (dot) {
+    return (
+      <span
+        aria-hidden
+        style={{ position: 'absolute', top: 4, right: 8, width: 8, height: 8, borderRadius: 9999, background: 'var(--danger-solid, #EF4444)', border: '1.5px solid #fff' }}
+      />
+    )
+  }
+  return (
+    <span
+      className="flex items-center justify-center font-bold"
+      style={{
+        marginLeft: 'auto',
+        minWidth: 18,
+        height: 18,
+        padding: '0 5px',
+        borderRadius: 9999,
+        fontSize: 11,
+        background: 'var(--danger-solid, #EF4444)',
+        color: '#fff',
+      }}
+    >
+      {count > 99 ? '99+' : count}
+    </span>
+  )
+}
 
 function NavLink({
   item,
   active,
   collapsed,
+  badge = 0,
 }: {
   item: NavItem
   active: boolean
   collapsed: boolean
+  badge?: number
 }) {
   const [hover, setHover] = useState(false)
   const Icon = item.icon
@@ -56,7 +89,7 @@ function NavLink({
       title={collapsed ? item.label : undefined}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      className="flex items-center font-medium"
+      className="flex items-center font-medium relative"
       style={{
         gap: 10,
         padding: collapsed ? '8px 0' : '8px 10px',
@@ -73,11 +106,18 @@ function NavLink({
     >
       <Icon size={20} color={iconColor} style={{ flexShrink: 0 }} />
       {!collapsed && <span className="whitespace-nowrap">{item.label}</span>}
+      {collapsed ? <Badge count={badge} dot /> : <Badge count={badge} />}
     </Link>
   )
 }
 
-export function SidebarNav({ collapsed }: { collapsed: boolean }) {
+export function SidebarNav({
+  collapsed,
+  reportCount = 0,
+}: {
+  collapsed: boolean
+  reportCount?: number
+}) {
   const pathname = usePathname()
   return (
     <nav
@@ -90,6 +130,7 @@ export function SidebarNav({ collapsed }: { collapsed: boolean }) {
           item={item}
           collapsed={collapsed}
           active={pathname === item.href}
+          badge={item.href === '/admin/signalements' ? reportCount : 0}
         />
       ))}
     </nav>

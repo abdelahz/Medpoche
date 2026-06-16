@@ -5,6 +5,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Send, Loader2, ThumbsUp, ThumbsDown, Sparkles, BookText, ImagePlus, X, Crown } from 'lucide-react'
+import { ReportButton } from '@/components/shared/report-button'
 import { toast } from 'sonner'
 import { MCQRenderer } from '@/components/shared/mcq-renderer'
 import { saveChatTurn, setChatFeedback } from '@/app/actions/chat'
@@ -425,6 +426,9 @@ export function TutorChat({
                     >
                       <ThumbsDown size={14} />
                     </button>
+                    <span className="flex items-center justify-center" style={{ width: 28, height: 28 }}>
+                      <ReportButton context="ai" contextId={m.chatId} label={m.content.slice(0, 160)} size={14} />
+                    </span>
                   </div>
                 )}
               </div>

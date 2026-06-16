@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { X, Play, FileWarning } from 'lucide-react'
 import type { LibraryItem } from '@/types'
 import { youtubeEmbedUrl, isYoutubeId } from '@/lib/youtube'
+import { ReportButton } from '@/components/shared/report-button'
 
 /** Full-screen playlist player: the selected video + a clickable ordered list. */
 export function PlaylistViewer({
@@ -46,6 +47,15 @@ export function PlaylistViewer({
             Vidéo {Math.min(index + 1, videos.length)} / {videos.length}
           </div>
         </div>
+        <span className="flex items-center justify-center flex-shrink-0" style={{ width: 36, height: 36 }}>
+          <ReportButton
+            context="library"
+            contextId={current?.id}
+            label={current ? `${name} — ${current.title}` : name}
+            tone="var(--gray-500)"
+            size={18}
+          />
+        </span>
         <button
           type="button"
           onClick={onClose}

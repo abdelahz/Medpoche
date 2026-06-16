@@ -9,6 +9,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { X, Loader2, ChevronLeft, ChevronRight, FileWarning } from 'lucide-react'
 import type { LibraryItem } from '@/types'
+import { ReportButton } from '@/components/shared/report-button'
 
 // pdf.js worker, served locally from /public (no external CDN — privacy/offline).
 // Copied from pdfjs-dist by scripts/copy-pdf-worker.mjs on predev/prebuild so it
@@ -84,6 +85,9 @@ export function DocumentViewer({ item, onClose }: { item: LibraryItem; onClose: 
             {[item.type, item.module, item.subject].filter(Boolean).join(' · ')}
           </div>
         </div>
+        <span className="flex items-center justify-center flex-shrink-0" style={{ width: 36, height: 36 }}>
+          <ReportButton context="library" contextId={item.id} label={item.title} tone="var(--gray-500)" size={18} />
+        </span>
         <button
           type="button"
           onClick={onClose}

@@ -13,6 +13,7 @@ interface AdminShellProps {
     full_name: string | null
     email: string | null
   }
+  reportCount?: number
 }
 
 function getInitials(fullName: string | null): string {
@@ -26,7 +27,7 @@ function getInitials(fullName: string | null): string {
     .slice(0, 2)
 }
 
-export function AdminShell({ children, profile }: AdminShellProps) {
+export function AdminShell({ children, profile, reportCount = 0 }: AdminShellProps) {
   const [collapsed, setCollapsed] = useState(false)
   const initials = getInitials(profile.full_name)
 
@@ -102,7 +103,7 @@ export function AdminShell({ children, profile }: AdminShellProps) {
         )}
 
         {/* Nav */}
-        <SidebarNav collapsed={collapsed} />
+        <SidebarNav collapsed={collapsed} reportCount={reportCount} />
 
         {/* User footer */}
         <div
@@ -158,7 +159,7 @@ export function AdminShell({ children, profile }: AdminShellProps) {
 
       {/* ── Main area ── */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <TopBar initials={initials} />
+        <TopBar initials={initials} reportCount={reportCount} />
         <main className="flex-1 overflow-y-auto" style={{ padding: 24 }}>
           {children}
         </main>
