@@ -36,7 +36,7 @@ export default function RegisterPage() {
     setLoading(true)
 
     const supabase = createClient()
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -48,6 +48,15 @@ export default function RegisterPage() {
     if (error) {
       toast.error(error.message)
       setLoading(false)
+      return
+    }
+
+    // When email confirmation is OFF, signUp returns a session (the user is
+    // logged in) — send them straight into the app via a hard navigation, so
+    // the fresh auth cookie reaches the server role router. When confirmation
+    // is ON there's no session yet → show the "verify your email" screen.
+    if (data.session) {
+      window.location.assign('/')
       return
     }
 

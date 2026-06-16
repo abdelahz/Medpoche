@@ -1,14 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { AuthField, AuthShell } from '@/components/auth/auth-parts'
 
 export default function LoginPage() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [show, setShow] = useState(false)
@@ -34,9 +32,11 @@ export default function LoginPage() {
       return
     }
 
-    // '/' is the role router → admins land on /admin, students on /student.
-    router.refresh()
-    router.push('/')
+    // Hard navigation (not router.push) so the freshly-set auth cookie reaches
+    // the server on the FIRST request to '/'. A soft navigation can render the
+    // logged-out landing page until a manual refresh. '/' is the role router →
+    // admins land on /admin, students on /student.
+    window.location.assign('/')
   }
 
   // NOTE: Google sign-in temporarily removed (re-enable in ~2 days). See git history.
