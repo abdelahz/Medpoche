@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getWrongMcqIds } from '@/lib/mistakes'
 import { getUserPlan, getMcqAllowance } from '@/lib/usage'
 import { PLAN_LIMITS } from '@/lib/plans'
@@ -17,9 +18,10 @@ export default async function EntrainementPage({
   } = await supabase.auth.getUser()
   const uid = user?.id ?? ''
 
-  // Facets of published QCMs (RLS already restricts students to status='ready').
+  // Facets of published QCMs. Read with the service role — students can't query
+  // `mcqs` directly (RLS); these are non-sensitive metadata (matière/année/cours).
   const [facetsRes, bookmarkRes, wrongIds] = await Promise.all([
-    supabase.from('mcqs').select('module, year, subject, exam_blanc').eq('status', 'ready'),
+    createAdminClient().from('mcqs').select('module, year, subject, exam_blanc').eq('status', 'ready'),
     supabase.from('bookmarks').select('*', { count: 'exact', head: true }).eq('user_id', uid),
     getWrongMcqIds(supabase, uid),
   ])

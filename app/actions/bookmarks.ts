@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getUserPlan, getMcqAllowance, capToRemaining } from '@/lib/usage'
 import type { PracticeQuestion } from '@/types'
 
@@ -60,7 +61,9 @@ export async function getBookmarkedQuestions(): Promise<PracticeQuestion[]> {
   const ids = (marks ?? []).map((m) => m.mcq_id)
   if (ids.length === 0) return []
 
-  const { data } = await supabase
+  // Service role: students can't read `mcqs` directly (RLS); the bookmark ids
+  // are the student's own, and the result is capped to their daily allowance.
+  const { data } = await createAdminClient()
     .from('mcqs')
     .select('id, question, option_a, option_b, option_c, option_d, option_e, correct, explanation, module, has_list, image_required')
     .eq('status', 'ready')

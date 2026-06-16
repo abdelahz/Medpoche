@@ -427,3 +427,44 @@ create policy "Admins delete reports" on reports for delete using (public.is_adm
 
 grant all on reports to anon, authenticated, service_role;
 grant usage, select on sequence reports_id_seq to anon, authenticated, service_role;
+
+-- ============================================================
+-- HARDEN USAGE TABLES (re-runnable) — SECURITY
+-- mcq_attempts and ai_usage previously had `for all` user policies, which let a
+-- student UPDATE/DELETE their OWN rows from the browser client: deleting rows
+-- resets the daily quota (→ unlimited practice / AI), and editing is_correct
+-- inflates XP / streak / leaderboard. Restrict both to SELECT + INSERT of their
+-- own rows. The app only ever INSERTs these via the user session (recordAttempt
+-- / recordAiUsage); account deletion uses the service role, which bypasses RLS.
+-- Also add the index the daily-quota / stats / streak queries rely on.
+-- RUN THIS on existing databases — it closes a real quota/leaderboard bypass.
+-- ============================================================
+drop policy if exists "Users own attempts" on mcq_attempts;
+drop policy if exists "Users read own attempts" on mcq_attempts;
+drop policy if exists "Users insert own attempts" on mcq_attempts;
+create policy "Users read own attempts"
+  on mcq_attempts for select using (auth.uid() = user_id);
+create policy "Users insert own attempts"
+  on mcq_attempts for insert with check (auth.uid() = user_id);
+
+drop policy if exists "Users own ai_usage" on ai_usage;
+drop policy if exists "Users read own ai_usage" on ai_usage;
+drop policy if exists "Users insert own ai_usage" on ai_usage;
+create policy "Users read own ai_usage"
+  on ai_usage for select using (auth.uid() = user_id);
+create policy "Users insert own ai_usage"
+  on ai_usage for insert with check (auth.uid() = user_id);
+
+create index if not exists mcq_attempts_user_day_idx on mcq_attempts(user_id, created_at);
+
+-- ============================================================
+-- PROTECT MCQ CONTENT (re-runnable) — SECURITY / freemium
+-- Previously ANY authenticated user could `select *` the whole ready MCQ bank
+-- (questions + correct + explanation) straight from the browser client, which
+-- bypassed the daily quota and the paywall entirely. Drop the broad student
+-- read policy: students no longer read `mcqs` directly at all. MCQs are served
+-- ONLY through the quota-enforcing server actions (getPracticeQuestions etc.),
+-- which read with the service role. Admins keep full access via the existing
+-- "Admins full access mcqs" policy. RUN THIS on existing databases.
+-- ============================================================
+drop policy if exists "Students read ready mcqs" on mcqs;

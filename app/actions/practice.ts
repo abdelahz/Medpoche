@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getWrongMcqIds } from '@/lib/mistakes'
 import { computeStreak, computeXp } from '@/lib/gamification'
 import { getUserPlan, getMcqAllowance, capToRemaining } from '@/lib/usage'
@@ -170,7 +171,10 @@ export async function getPracticeQuestions(
   const { remaining } = await getMcqAllowance(supabase, user.id, plan)
   if (remaining === 0) return []
 
-  let query = supabase.from('mcqs').select(PRACTICE_COLS).eq('status', 'ready')
+  // MCQ content is read with the service role: students can't query `mcqs`
+  // directly (RLS), so the per-plan daily cap above is the only path to questions.
+  const mdb = createAdminClient()
+  let query = mdb.from('mcqs').select(PRACTICE_COLS).eq('status', 'ready')
 
   if (filter.module) query = query.eq('module', filter.module)
   if (filter.year) query = query.eq('year', filter.year)
@@ -190,7 +194,7 @@ export async function getPracticeQuestions(
   // d'un même examen dans leur ordre d'origine et on ne mélange que l'ordre des
   // examens entre eux — une suite de questions liées d'un même examen n'est jamais
   // éparpillée. (Le plafond `cap` peut tronquer le dernier bloc — compromis assumé.)
-  let groupQuery = supabase
+  let groupQuery = mdb
     .from('mcqs')
     .select(`${PRACTICE_COLS}, year, exam_blanc, position`)
     .eq('status', 'ready')
@@ -226,7 +230,8 @@ export async function getExamSession(
   const { remaining } = await getMcqAllowance(supabase, user.id, plan)
   if (remaining === 0) return []
 
-  let query = supabase.from('mcqs').select(`${PRACTICE_COLS}, position`).eq('status', 'ready')
+  const mdb = createAdminClient()
+  let query = mdb.from('mcqs').select(`${PRACTICE_COLS}, position`).eq('status', 'ready')
   if (filter.year) query = query.eq('year', filter.year)
   if (filter.exam_blanc) query = query.eq('exam_blanc', filter.exam_blanc)
 
@@ -281,7 +286,8 @@ export async function getMatiereQuickSeries(module: string): Promise<PracticeQue
   const { remaining } = await getMcqAllowance(supabase, user.id, plan)
   if (remaining === 0) return []
 
-  const { data } = await supabase
+  const mdb = createAdminClient()
+  const { data } = await mdb
     .from('mcqs')
     .select(PRACTICE_COLS)
     .eq('status', 'ready')
@@ -328,7 +334,8 @@ export async function getMistakeQuestions(): Promise<PracticeQuestion[]> {
   const wrongIds = await getWrongMcqIds(supabase, user.id)
   if (wrongIds.length === 0) return []
 
-  const { data } = await supabase
+  const mdb = createAdminClient()
+  const { data } = await mdb
     .from('mcqs')
     .select(PRACTICE_COLS)
     .eq('status', 'ready')
@@ -352,7 +359,7 @@ export async function recordAttempt(
   } = await supabase.auth.getUser()
   if (!user) return { error: 'Non authentifié.' }
 
-  const { data: mcq } = await supabase.from('mcqs').select('correct').eq('id', mcqId).single()
+  const { data: mcq } = await createAdminClient().from('mcqs').select('correct').eq('id', mcqId).single()
   if (!mcq) return { error: 'Question introuvable.' }
 
   const isCorrect = (mcq.correct ?? '').trim().toUpperCase() === selected.trim().toUpperCase()

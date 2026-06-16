@@ -128,15 +128,16 @@ export async function POST(req: Request) {
     })
   }
 
-  // Count this request against the quota now (before the Gemini calls), so it
-  // holds even if the model errors and regardless of what the client does next.
-  await recordAiUsage(supabase, user.id, isPhoto ? 'photo' : 'text')
+  // Quota is charged once an answer actually starts streaming (see below), so a
+  // hard model failure that produces no output doesn't cost the user a message.
 
   // Photo path: read the question off the image; abstain if unreadable.
   let retrievalQuery = question
   if (image) {
     const ocr = await transcribeImageQuestion(image)
     if (!ocr.readable && !question) {
+      // An unreadable photo still consumed an OCR call — count it (and curbs spam).
+      await recordAiUsage(supabase, user.id, 'photo')
       return streamText(
         "Je n'arrive pas à bien lire la question sur la photo. Reprends-la nette, bien cadrée et lisible, puis renvoie-la 🙂",
         { 'X-Question': b64Header('Question par photo (illisible)'), 'X-Sources': b64Header('[]') }
@@ -205,6 +206,7 @@ export async function POST(req: Request) {
   const encoder = new TextEncoder()
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      let charged = false
       try {
         for await (const piece of streamTutorAnswer({
           question: questionForPrompt,
@@ -213,6 +215,12 @@ export async function POST(req: Request) {
           instructions,
           image,
         })) {
+          // Charge the quota only once the answer actually starts streaming — a
+          // failed call (no output) won't consume the user's daily message.
+          if (!charged) {
+            charged = true
+            void recordAiUsage(supabase, user.id, isPhoto ? 'photo' : 'text')
+          }
           controller.enqueue(encoder.encode(piece))
         }
       } catch (err) {

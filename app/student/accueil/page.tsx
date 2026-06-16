@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getWrongMcqIds } from '@/lib/mistakes'
 import { getWeeklyLeaderboard } from '@/lib/leaderboard'
 import { MODULES } from '@/components/student/primitives'
@@ -13,10 +14,12 @@ export default async function AccueilPage() {
   } = await supabase.auth.getUser()
   const uid = user?.id ?? ''
 
+  // Service role for `mcqs` reads — students can't query it directly (RLS).
+  const mdb = createAdminClient()
   const [profileRes, attemptsRes, readyRes, bookmarkRes, wrongIds, lbRows] = await Promise.all([
     supabase.from('profiles').select('full_name, plan').eq('id', uid).single(),
-    supabase.from('mcq_attempts').select('is_correct, created_at, mcqs(module)').eq('user_id', uid),
-    supabase.from('mcqs').select('module').eq('status', 'ready'),
+    supabase.from('mcq_attempts').select('is_correct, created_at, mcq_id').eq('user_id', uid),
+    mdb.from('mcqs').select('module').eq('status', 'ready'),
     supabase.from('bookmarks').select('*', { count: 'exact', head: true }).eq('user_id', uid),
     getWrongMcqIds(supabase, uid),
     getWeeklyLeaderboard(supabase, 50),
@@ -31,8 +34,16 @@ export default async function AccueilPage() {
   const rows = (attemptsRes.data ?? []) as unknown as {
     is_correct: boolean | null
     created_at: string
-    mcqs: { module: string | null } | null
+    mcq_id: number
   }[]
+
+  // Matière per attempt (was an embedded mcqs(module) join — now blocked by RLS).
+  const attemptMcqIds = Array.from(new Set(rows.map((r) => r.mcq_id)))
+  const moduleById = new Map<number, string | null>()
+  if (attemptMcqIds.length) {
+    const { data: mods } = await mdb.from('mcqs').select('id, module').in('id', attemptMcqIds)
+    for (const m of mods ?? []) moduleById.set(m.id as number, (m.module as string) ?? null)
+  }
 
   const startOfDay = new Date()
   startOfDay.setHours(0, 0, 0, 0)
@@ -45,7 +56,7 @@ export default async function AccueilPage() {
     dateKeys.add(new Date(r.created_at).toISOString().slice(0, 10))
     if (new Date(r.created_at) >= startOfDay) todayCount++
     if (r.is_correct) correctTotal++
-    const mod = r.mcqs?.module
+    const mod = moduleById.get(r.mcq_id)
     if (mod) {
       const cur = byModule.get(mod) ?? { total: 0, correct: 0 }
       cur.total++
