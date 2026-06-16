@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { resilientFetch } from './resilient-fetch'
 
 export async function createClient() {
   const cookieStore = await cookies()
@@ -8,6 +9,9 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // Retry transient DNS/connect blips so a momentary network hiccup doesn't
+      // surface as an app error (esp. the AI tutor's many Supabase calls).
+      global: { fetch: resilientFetch },
       cookies: {
         getAll() {
           return cookieStore.getAll()

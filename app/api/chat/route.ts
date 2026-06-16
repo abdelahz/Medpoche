@@ -215,7 +215,8 @@ export async function POST(req: Request) {
         })) {
           controller.enqueue(encoder.encode(piece))
         }
-      } catch {
+      } catch (err) {
+        console.error('[chat] streamTutorAnswer failed:', err)
         controller.enqueue(encoder.encode('\n\n*Une erreur est survenue. Réessaie dans un instant.*'))
       } finally {
         controller.close()

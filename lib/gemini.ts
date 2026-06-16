@@ -67,7 +67,17 @@ async function embedPost(endpoint: string, body: unknown): Promise<Response> {
   }
   let lastText = ''
   for (let attempt = 0; attempt < 5; attempt++) {
-    const res = await fetch(`${endpoint}?key=${getApiKey()}`, init)
+    let res: Response
+    try {
+      res = await fetch(`${endpoint}?key=${getApiKey()}`, init)
+    } catch (err) {
+      // Flaky DNS/connect — retry a few times before giving up.
+      if (isNetworkError(err) && attempt < 4) {
+        await sleep(250 * (attempt + 1))
+        continue
+      }
+      throw err
+    }
     if (res.ok) return res
     lastText = await res.text()
     if ((res.status === 429 || res.status === 503) && attempt < 4) {
@@ -295,6 +305,15 @@ async function uploadAndWait(
 function isTransient(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err)
   return /\b(503|500|overloaded|unavailable)\b/i.test(msg)
+}
+
+/** True for transient NETWORK failures (flaky DNS/connect) worth a quick retry. */
+function isNetworkError(err: unknown): boolean {
+  const e = err as { cause?: { code?: string; message?: string }; message?: string }
+  const s = `${e?.cause?.code ?? ''} ${e?.cause?.message ?? ''} ${e?.message ?? ''}`
+  return /ENOTFOUND|EAI_AGAIN|ETIMEDOUT|ECONNRESET|ECONNREFUSED|UND_ERR_CONNECT_TIMEOUT|fetch failed|socket hang up/i.test(
+    s
+  )
 }
 
 /**
@@ -571,10 +590,27 @@ export async function* streamTutorAnswer(input: {
   }
   contents.push({ role: 'user', parts })
 
-  const result = await model.generateContentStream({ contents })
-  for await (const chunk of result.stream) {
-    const piece = chunk.text()
-    if (piece) yield piece
+  // Retry transient DNS/connect blips, but ONLY before the first chunk is
+  // emitted — once we've yielded text, a retry would duplicate the answer.
+  for (let attempt = 0; ; attempt++) {
+    let started = false
+    try {
+      const result = await model.generateContentStream({ contents })
+      for await (const chunk of result.stream) {
+        const piece = chunk.text()
+        if (piece) {
+          started = true
+          yield piece
+        }
+      }
+      return
+    } catch (err) {
+      if (!started && isNetworkError(err) && attempt < 3) {
+        await sleep(250 * (attempt + 1))
+        continue
+      }
+      throw err
+    }
   }
 }
 
