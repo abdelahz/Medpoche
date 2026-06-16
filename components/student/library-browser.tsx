@@ -6,7 +6,7 @@ import { Search, FileText, Eye, Play, ListVideo } from 'lucide-react'
 import type { LibraryItem } from '@/types'
 import { LIBRARY_TYPES } from '@/types'
 import { isVideoType } from '@/lib/youtube'
-import { ScreenHeader, ModuleIcon, MODULE_THEME } from './primitives'
+import { ScreenHeader, MODULE_THEME } from './primitives'
 import { VideoViewer } from './video-viewer'
 import { PlaylistViewer } from './playlist-viewer'
 
@@ -252,97 +252,87 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
           <>
             {playlists.map((g) => {
               const mod = g.videos.find((v) => v.module)?.module ?? null
-              const plMeta = [`${g.videos.length} vidéo${g.videos.length > 1 ? 's' : ''}`, mod]
-                .filter(Boolean)
-                .join(' · ')
+              const theme = mod ? MODULE_THEME[mod] : null
+              const accent = theme ? theme.color : 'var(--accent-500, #7C5CFF)'
+              const tint = theme ? theme.bg : 'var(--accent-50, #F1ECFF)'
+              const plMeta = `${g.videos.length} vidéo${g.videos.length > 1 ? 's' : ''}${mod ? ` · ${mod}` : ''}`
               return (
                 <button
                   key={`pl-${g.name}`}
                   type="button"
                   onClick={() => setOpenPlaylist(g)}
                   className="flex items-center w-full text-left"
-                  style={{ gap: 12, padding: 14, borderRadius: 16, border: '0.5px solid var(--gray-200)', background: '#fff', cursor: 'pointer' }}
+                  style={{ gap: 13, padding: '14px 15px', borderRadius: 18, background: tint, cursor: 'pointer' }}
                 >
                   <div
                     className="flex items-center justify-center flex-shrink-0"
-                    style={{ width: 42, height: 42, borderRadius: 10, background: 'var(--primary-50)', color: 'var(--primary-600)' }}
+                    style={{ width: 46, height: 46, borderRadius: 13, background: accent, color: '#fff' }}
                   >
-                    <ListVideo size={20} />
+                    <ListVideo size={22} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="overflow-hidden text-ellipsis whitespace-nowrap" style={{ fontSize: 14, fontWeight: 600, color: 'var(--gray-900)' }}>
+                    <div className="overflow-hidden text-ellipsis whitespace-nowrap" style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--gray-900)' }}>
                       {g.name}
                     </div>
                     <div className="overflow-hidden text-ellipsis whitespace-nowrap" style={{ fontSize: 12, color: 'var(--gray-600)', marginTop: 2 }}>
                       Playlist · {plMeta}
                     </div>
                   </div>
-                  <span className="flex items-center justify-center flex-shrink-0" style={{ color: 'var(--primary-600)' }} title="Ouvrir la playlist">
-                    <Play size={18} />
+                  <span
+                    className="flex items-center justify-center flex-shrink-0"
+                    style={{ width: 34, height: 34, borderRadius: 9999, background: '#fff', color: accent }}
+                    title="Ouvrir la playlist"
+                  >
+                    <Play size={17} />
                   </span>
                 </button>
               )
             })}
             {looseItems.map((item) => {
-              const theme = item.module ? MODULE_THEME[item.module] : undefined
-              const meta = [item.type, item.module, item.subject].filter(Boolean).join(' · ')
               const isVid = isVideoType(item.type)
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => openItem(item)}
-                className="flex items-center w-full text-left"
-                style={{
-                  gap: 12,
-                  padding: 14,
-                  borderRadius: 16,
-                  border: '0.5px solid var(--gray-200)',
-                  background: '#fff',
-                  cursor: 'pointer',
-                }}
-              >
-                {isVid ? (
-                  <div
-                    className="flex items-center justify-center flex-shrink-0"
-                    style={{ width: 42, height: 42, borderRadius: 10, background: 'var(--primary-50)', color: 'var(--primary-600)' }}
-                  >
-                    <Play size={20} />
-                  </div>
-                ) : item.module ? (
-                  <ModuleIcon module={item.module} size={42} radius={10} />
-                ) : (
-                  <div
-                    className="flex items-center justify-center flex-shrink-0"
-                    style={{ width: 42, height: 42, borderRadius: 10, background: 'var(--gray-100)', color: 'var(--gray-600)' }}
-                  >
-                    <FileText size={20} />
-                  </div>
-                )}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    className="overflow-hidden text-ellipsis whitespace-nowrap"
-                    style={{ fontSize: 14, fontWeight: 600, color: 'var(--gray-900)' }}
-                  >
-                    {item.title}
-                  </div>
-                  <div
-                    className="overflow-hidden text-ellipsis whitespace-nowrap"
-                    style={{ fontSize: 12, color: 'var(--gray-600)', marginTop: 2 }}
-                  >
-                    {meta}
-                  </div>
-                </div>
-                <span
-                  className="flex items-center justify-center flex-shrink-0"
-                  style={{ color: isVid ? 'var(--primary-600)' : theme?.color ?? 'var(--gray-400)' }}
-                  title={isVid ? 'Regarder' : 'Consulter'}
+              const theme = item.module ? MODULE_THEME[item.module] : null
+              const accent = theme ? theme.color : isVid ? 'var(--accent-500, #7C5CFF)' : 'var(--gray-500)'
+              const tint = theme ? theme.bg : isVid ? 'var(--accent-50, #F1ECFF)' : 'var(--gray-50)'
+              const ChipIcon = isVid ? Play : theme ? theme.icon : FileText
+              const meta = [item.type, item.subject].filter(Boolean).join(' · ')
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => openItem(item)}
+                  className="flex items-center w-full text-left"
+                  style={{ gap: 13, padding: '14px 15px', borderRadius: 18, background: tint, cursor: 'pointer' }}
                 >
-                  {isVid ? <Play size={18} /> : <Eye size={18} />}
-                </span>
-              </button>
-                )
-              })}
+                  <div
+                    className="flex items-center justify-center flex-shrink-0"
+                    style={{ width: 46, height: 46, borderRadius: 13, background: accent, color: '#fff' }}
+                  >
+                    <ChipIcon size={22} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      className="overflow-hidden text-ellipsis whitespace-nowrap"
+                      style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--gray-900)' }}
+                    >
+                      {item.title}
+                    </div>
+                    <div
+                      className="overflow-hidden text-ellipsis whitespace-nowrap"
+                      style={{ fontSize: 12, color: 'var(--gray-600)', marginTop: 2 }}
+                    >
+                      {meta}
+                    </div>
+                  </div>
+                  <span
+                    className="flex items-center justify-center flex-shrink-0"
+                    style={{ width: 34, height: 34, borderRadius: 9999, background: '#fff', color: accent }}
+                    title={isVid ? 'Regarder' : 'Consulter'}
+                  >
+                    {isVid ? <Play size={17} /> : <Eye size={17} />}
+                  </span>
+                </button>
+              )
+            })}
           </>
         )}
       </div>

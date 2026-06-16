@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 
 /* ============================================================
    Auth split-layout shell: brand panel (45%) + form panel.
@@ -22,14 +23,16 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
         }}
       >
         <div className="flex flex-col items-center text-center" style={{ maxWidth: 360 }}>
-          <Image
-            src="/brand/logo.png"
-            alt="Med En Poche"
-            width={208}
-            height={120}
-            priority
-            style={{ width: 208, height: 'auto', display: 'block' }}
-          />
+          <Link href="/" aria-label="Retour à l'accueil">
+            <Image
+              src="/brand/logo.png"
+              alt="Med En Poche"
+              width={208}
+              height={120}
+              priority
+              style={{ width: 208, height: 'auto', display: 'block' }}
+            />
+          </Link>
           <div
             style={{
               width: 44,
@@ -60,13 +63,15 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
           className="auth-mobile-logo flex-col items-center"
           style={{ display: 'none', paddingTop: 40, paddingBottom: 4, gap: 14 }}
         >
-          <Image
-            src="/brand/logo.png"
-            alt="Med En Poche"
-            width={128}
-            height={74}
-            style={{ width: 128, height: 'auto' }}
-          />
+          <Link href="/" aria-label="Retour à l'accueil">
+            <Image
+              src="/brand/logo.png"
+              alt="Med En Poche"
+              width={128}
+              height={74}
+              style={{ width: 128, height: 'auto' }}
+            />
+          </Link>
           <div
             className="text-center font-medium"
             style={{ fontSize: 13, color: 'var(--brand-blue)', maxWidth: 300 }}

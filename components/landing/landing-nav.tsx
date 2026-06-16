@@ -34,7 +34,7 @@ export function LandingNav() {
       <Container>
         <div className="flex items-center justify-between" style={{ height: 66 }}>
           <Link href="/" aria-label="MedenPoche — accueil" className="flex items-center">
-            <BrandMark height={30} />
+            <BrandMark height={48} />
           </Link>
 
           <nav className="hidden md:flex items-center" style={{ gap: 4 }}>
