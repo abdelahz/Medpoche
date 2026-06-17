@@ -468,3 +468,13 @@ create index if not exists mcq_attempts_user_day_idx on mcq_attempts(user_id, cr
 -- "Admins full access mcqs" policy. RUN THIS on existing databases.
 -- ============================================================
 drop policy if exists "Students read ready mcqs" on mcqs;
+
+-- ============================================================
+-- SINGLE ACTIVE SESSION (re-runnable) — anti account-sharing
+-- Each login writes a fresh token here and mirrors it in the `mp_session`
+-- cookie; the middleware signs out any device whose cookie token no longer
+-- matches (newest login wins). Updating session_token is allowed by the
+-- "Users update own profile" policy (not blocked by the privilege guard).
+-- RUN THIS.
+-- ============================================================
+alter table profiles add column if not exists session_token text;

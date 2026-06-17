@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { SESSION_COOKIE, SESSION_COOKIE_MAX_AGE } from '@/lib/session'
 import { toast } from 'sonner'
 import { AuthField, AuthShell, StrengthBar } from '@/components/auth/auth-parts'
 
@@ -52,10 +53,13 @@ export default function RegisterPage() {
     }
 
     // When email confirmation is OFF, signUp returns a session (the user is
-    // logged in) — send them straight into the app via a hard navigation, so
-    // the fresh auth cookie reaches the server role router. When confirmation
-    // is ON there's no session yet → show the "verify your email" screen.
-    if (data.session) {
+    // logged in) — claim the single active session, then hard-navigate so the
+    // fresh auth cookie reaches the server role router. When confirmation is ON
+    // there's no session yet → show the "verify your email" screen.
+    if (data.session && data.user) {
+      const token = crypto.randomUUID()
+      await supabase.from('profiles').update({ session_token: token }).eq('id', data.user.id)
+      document.cookie = `${SESSION_COOKIE}=${token}; path=/; max-age=${SESSION_COOKIE_MAX_AGE}; samesite=lax`
       window.location.assign('/')
       return
     }

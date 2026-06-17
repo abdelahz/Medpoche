@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { SESSION_COOKIE, SESSION_COOKIE_MAX_AGE } from '@/lib/session'
 import { AuthField, AuthShell } from '@/components/auth/auth-parts'
 
 export default function LoginPage() {
@@ -12,6 +13,13 @@ export default function LoginPage() {
   const [show, setShow] = useState(false)
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState('')
+  const [elsewhere, setElsewhere] = useState(false)
+
+  // Surfaced when the middleware signed this device out because the account was
+  // used on another device (single active session).
+  useEffect(() => {
+    setElsewhere(new URLSearchParams(window.location.search).get('reason') === 'elsewhere')
+  }, [])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -23,13 +31,21 @@ export default function LoginPage() {
     setLoading(true)
 
     const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
       // Generic message — never reveal whether the email exists (anti-enumeration).
       setErr('Email ou mot de passe incorrect.')
       setLoading(false)
       return
+    }
+
+    // Claim this device as the account's single active session (newest login
+    // wins): any other device is signed out by the middleware on its next request.
+    if (data.user) {
+      const token = crypto.randomUUID()
+      await supabase.from('profiles').update({ session_token: token }).eq('id', data.user.id)
+      document.cookie = `${SESSION_COOKIE}=${token}; path=/; max-age=${SESSION_COOKIE_MAX_AGE}; samesite=lax`
     }
 
     // Hard navigation (not router.push) so the freshly-set auth cookie reaches
@@ -49,6 +65,20 @@ export default function LoginPage() {
       <p className="text-base mt-2 mb-7" style={{ color: 'var(--gray-600)' }}>
         Connectez-vous à votre compte
       </p>
+
+      {elsewhere && !err && (
+        <div
+          className="text-xs px-3 py-2.5 mb-4"
+          style={{
+            background: 'var(--info-bg)',
+            border: '0.5px solid var(--primary-100)',
+            color: 'var(--info-text)',
+            borderRadius: 10,
+          }}
+        >
+          Vous avez été déconnecté car votre compte a été utilisé sur un autre appareil.
+        </div>
+      )}
 
       {err && (
         <div

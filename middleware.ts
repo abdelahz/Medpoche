@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
+import { SESSION_COOKIE } from '@/lib/session'
 
 const supabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL?.startsWith('http') ?? false
@@ -21,7 +22,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  const { supabaseResponse, user, authError } = await updateSession(request)
+  const { supabaseResponse, user, authError, supabase } = await updateSession(request)
 
   // Auth routes: already-authenticated users go to the role router at '/'.
   // Exception: the password-reset page must stay reachable WITH a session — the
@@ -42,6 +43,37 @@ export async function middleware(request: NextRequest) {
         return supabaseResponse
       }
       return redirectWith(new URL('/auth/login', request.url), supabaseResponse)
+    }
+
+    // Single active session (newest login wins). If this device's cookie token
+    // no longer matches the account's current token, the account was used
+    // elsewhere → sign this device out. Skip Next.js prefetches to avoid a DB
+    // read on every hovered link.
+    const isPrefetch =
+      request.headers.get('next-router-prefetch') === '1' ||
+      request.headers.get('purpose') === 'prefetch'
+    if (!isPrefetch) {
+      const cookieToken = request.cookies.get(SESSION_COOKIE)?.value ?? null
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('session_token')
+        .eq('id', user.id)
+        .single()
+      const dbToken = (prof?.session_token as string | null) ?? null
+      // Only enforce once a token exists (accounts that never logged in since
+      // the feature shipped aren't kicked).
+      if (dbToken && cookieToken !== dbToken) {
+        const url = new URL('/auth/login', request.url)
+        url.searchParams.set('reason', 'elsewhere')
+        const res = NextResponse.redirect(url)
+        // Clear this device's auth + session cookies → it lands logged out.
+        for (const c of request.cookies.getAll()) {
+          if (c.name.startsWith('sb-') || c.name === SESSION_COOKIE) {
+            res.cookies.set(c.name, '', { path: '/', maxAge: 0 })
+          }
+        }
+        return res
+      }
     }
     return supabaseResponse
   }
