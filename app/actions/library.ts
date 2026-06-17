@@ -75,6 +75,45 @@ export async function createLibraryItem(input: {
   return { success: true }
 }
 
+/**
+ * Update a library item's metadata (admin only) — title, type, matière, cours,
+ * and (for videos) playlist + order. The file / YouTube video itself is left
+ * unchanged. This is how playlists are reorganised after upload.
+ */
+export async function updateLibraryItem(input: {
+  id: number
+  title: string
+  type: string
+  module: string | null
+  subject: string | null
+  playlist?: string | null
+  position?: number | null
+}): Promise<ActionResult> {
+  if (!input.title.trim()) return { success: false, error: 'Le titre est requis.' }
+
+  const supabase = await createClient()
+  const admin = await requireAdmin(supabase)
+  if (!admin.ok) return { success: false, error: admin.error }
+
+  const video = isVideoType(input.type)
+  const { error } = await supabase
+    .from('library')
+    .update({
+      title: input.title.trim(),
+      type: input.type,
+      module: input.module?.trim() || null,
+      subject: input.subject?.trim() || null,
+      // Playlist grouping is video-only; cleared for file documents.
+      playlist: video ? input.playlist?.trim() || null : null,
+      position: video && typeof input.position === 'number' ? input.position : null,
+    })
+    .eq('id', input.id)
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/admin/bibliotheque')
+  return { success: true }
+}
+
 /** Delete a library item and its stored file. */
 export async function deleteLibraryItem(id: number): Promise<ActionResult> {
   const supabase = await createClient()

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, Plus, Download, Trash2, Loader2, FileText, Play } from 'lucide-react'
+import { Search, Plus, Download, Trash2, Loader2, FileText, Play, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import type { LibraryItem } from '@/types'
 import { LIBRARY_TYPES } from '@/types'
@@ -11,8 +11,9 @@ import { deleteLibraryItem, getLibrarySignedUrl } from '@/app/actions/library'
 import { Card } from './primitives'
 import { Button } from './button'
 import { LibraryUploadModal } from './library-upload-modal'
+import { LibraryEditModal } from './library-edit-modal'
 
-const GRID = '1fr 100px 130px 150px 96px 96px'
+const GRID = '1fr 100px 130px 150px 96px 124px'
 
 function Chip({
   active,
@@ -51,6 +52,7 @@ export function LibraryManager({ items }: { items: LibraryItem[] }) {
   const [showUpload, setShowUpload] = useState(false)
   const [viewingId, setViewingId] = useState<number | null>(null)
   const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [editItem, setEditItem] = useState<LibraryItem | null>(null)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -233,6 +235,15 @@ export function LibraryManager({ items }: { items: LibraryItem[] }) {
                   <span className="flex items-center justify-end" style={{ gap: 4 }}>
                     <button
                       type="button"
+                      onClick={() => setEditItem(item)}
+                      title="Modifier"
+                      className="flex items-center justify-center"
+                      style={{ width: 30, height: 30, borderRadius: 8, color: 'var(--gray-600)', cursor: 'pointer' }}
+                    >
+                      <Pencil size={15} />
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleView(item)}
                       disabled={viewingId === item.id}
                       title={isVideoType(item.type) ? 'Regarder sur YouTube' : 'Voir / télécharger'}
@@ -271,6 +282,18 @@ export function LibraryManager({ items }: { items: LibraryItem[] }) {
           onClose={() => setShowUpload(false)}
           onDone={() => {
             setShowUpload(false)
+            router.refresh()
+          }}
+        />
+      )}
+
+      {editItem && (
+        <LibraryEditModal
+          item={editItem}
+          existingPlaylists={existingPlaylists}
+          onClose={() => setEditItem(null)}
+          onDone={() => {
+            setEditItem(null)
             router.refresh()
           }}
         />
