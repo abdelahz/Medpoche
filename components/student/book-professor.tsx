@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { GraduationCap, X, ArrowRight } from 'lucide-react'
 import { MODULES, type Module } from '@/types'
-import { whatsappProfessorUrl, PROFESSOR_SESSION_PRICE, INSTAGRAM_GRADIENT } from '@/lib/upgrade'
+import { whatsappProfessorUrl, PROFESSOR_SESSION_PRICE } from '@/lib/upgrade'
 
 const field: React.CSSProperties = {
   width: '100%',
@@ -128,15 +128,15 @@ export function BookProfessor() {
               className="flex items-center justify-center font-bold text-white"
               style={{
                 gap: 8, marginTop: 20, height: 46, borderRadius: 9999,
-                background: canSubmit ? INSTAGRAM_GRADIENT : 'var(--gray-200)',
+                background: canSubmit ? '#25D366' : 'var(--gray-200)',
                 color: canSubmit ? '#fff' : 'var(--gray-400)',
                 fontSize: 14, textDecoration: 'none', cursor: canSubmit ? 'pointer' : 'default',
               }}
             >
-              Réserver sur Instagram
+              Réserver sur WhatsApp
             </a>
             <p style={{ fontSize: 11.5, color: 'var(--gray-600)', textAlign: 'center', margin: '10px 0 0' }}>
-              On confirme le créneau ensemble sur Instagram.
+              On confirme le créneau ensemble sur WhatsApp.
             </p>
           </div>
         </div>

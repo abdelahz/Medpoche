@@ -502,7 +502,7 @@ function Pricing() {
           </div>
         </div>
         <p className="text-center" style={{ fontSize: 12.5, color: 'var(--gray-600)', marginTop: 22 }}>
-          Activation des plans payants par Instagram — simple et rapide.
+          Activation des plans payants par WhatsApp — simple et rapide.
         </p>
         <style>{`@media (min-width: 880px){ .lp-plans{ grid-template-columns: repeat(3, 1fr) !important; } }`}</style>
       </Container>

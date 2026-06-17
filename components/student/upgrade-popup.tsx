@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { X, Video, PartyPopper } from 'lucide-react'
 import type { Plan } from '@/types'
-import { whatsappMentorUrl, INSTAGRAM_GRADIENT } from '@/lib/upgrade'
+import { whatsappMentorUrl } from '@/lib/upgrade'
 
 const RANK: Record<Plan, number> = { gratuit: 0, basic: 1, premium: 2 }
 const KEY = 'mp-plan-seen'
@@ -75,7 +75,7 @@ export function UpgradePopup({ plan }: { plan: Plan }) {
           rel="noopener noreferrer"
           onClick={() => setOpen(false)}
           className="flex items-center justify-center font-bold text-white"
-          style={{ gap: 8, marginTop: 20, height: 46, borderRadius: 9999, background: INSTAGRAM_GRADIENT, fontSize: 14, textDecoration: 'none' }}
+          style={{ gap: 8, marginTop: 20, height: 46, borderRadius: 9999, background: '#25D366', fontSize: 14, textDecoration: 'none' }}
         >
           <Video size={17} /> Réserver mon appel
         </a>
