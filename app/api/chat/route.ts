@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import {
   embedQuery,
   streamTutorAnswer,
@@ -7,6 +8,7 @@ import {
   type ChatTurn,
   type ImagePart,
 } from '@/lib/gemini'
+import { parseMcqRef } from '@/lib/mcq-ref'
 import { getAiInstructions } from '@/app/actions/settings'
 import { checkAiQuota, recordAiUsage } from '@/lib/usage'
 import { PLAN_LIMITS, isUnlimited } from '@/lib/plans'
@@ -199,6 +201,43 @@ export async function POST(req: Request) {
     }
   } catch {
     // ignore — answer without retrieved context
+  }
+
+  // Direct MCQ reference (e.g. "explique la question 3 de SVT 2022") → fetch the
+  // exact QCM by position/matière/année and put it at the FRONT of the context,
+  // so the tutor answers from that question's real text, options and correction.
+  try {
+    const ref = parseMcqRef(question || retrievalQuery)
+    if (ref) {
+      let mq = createAdminClient()
+        .from('mcqs')
+        .select('question, option_a, option_b, option_c, option_d, option_e, correct, explanation, module, year, exam_blanc, position')
+        .eq('status', 'ready')
+        .eq('position', ref.position)
+      if (ref.module) mq = mq.eq('module', ref.module)
+      if (ref.year !== null) mq = mq.eq('year', ref.year)
+      if (ref.examBlanc) mq = mq.eq('exam_blanc', ref.examBlanc)
+      const { data: refMcqs } = await mq.order('year', { ascending: false }).limit(4)
+      const blocks: ContextBlock[] = (refMcqs ?? []).map((m) => {
+        const options = [
+          `A) ${m.option_a}`,
+          `B) ${m.option_b}`,
+          `C) ${m.option_c}`,
+          `D) ${m.option_d}`,
+          m.option_e ? `E) ${m.option_e}` : '',
+        ]
+          .filter(Boolean)
+          .join('\n')
+        const label = `QCM ${[m.module, m.year, m.exam_blanc].filter(Boolean).join(' ')} — question ${m.position}`
+        const content = `${label} :\n${m.question}\n${options}\nBonne réponse : ${m.correct}${
+          m.explanation ? `\nExplication officielle : ${m.explanation}` : ''
+        }`
+        return { source: label, page: null, content, priority: true, inLibrary: false }
+      })
+      if (blocks.length) context = [...blocks, ...context]
+    }
+  } catch {
+    // ignore — answer without the referenced MCQ
   }
 
   const instructions = await getAiInstructions()
