@@ -3,7 +3,7 @@
  * countdown and the time-scarcity framing on upsells. Override per-environment
  * with NEXT_PUBLIC_CONCOURS_DATE (YYYY-MM-DD).
  */
-export const CONCOURS_DATE = process.env.NEXT_PUBLIC_CONCOURS_DATE || '2026-07-19'
+export const CONCOURS_DATE = process.env.NEXT_PUBLIC_CONCOURS_DATE || '2026-07-18'
 
 /** Whole days remaining until the concours (0 once the date has passed). */
 export function daysUntilConcours(now: Date = new Date()): number {
