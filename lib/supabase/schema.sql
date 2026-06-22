@@ -478,3 +478,13 @@ drop policy if exists "Students read ready mcqs" on mcqs;
 -- RUN THIS.
 -- ============================================================
 alter table profiles add column if not exists session_token text;
+
+-- ============================================================
+-- AI-GENERATED MCQ EXPLANATIONS CACHE (re-runnable)
+-- Students can tap "Explique avec l'IA" on a QCM correction; the generated
+-- explanation is cached here so it's produced once per question — not per click
+-- or per student. Kept separate from `explanation` (official/admin text) so the
+-- two never overwrite each other. Written by the explainMcq server action via
+-- the service role. RUN THIS.
+-- ============================================================
+alter table mcqs add column if not exists ai_explanation text;

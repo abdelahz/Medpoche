@@ -1,43 +1,70 @@
 'use client'
 
 import { useRef, useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { Check, X, Loader2, RotateCcw, Bookmark, Zap, Flame, Target, TrendingUp, ChevronDown, Clock, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { usePracticeStore } from '@/lib/store/practice'
 import { recordAttempt, getSessionWrapup, type SessionWrapup } from '@/app/actions/practice'
 import { toggleBookmark } from '@/app/actions/bookmarks'
+import { explainMcq } from '@/app/actions/explain'
 import { MCQRenderer } from '@/components/shared/mcq-renderer'
 import { ReportButton } from '@/components/shared/report-button'
 import { DAILY_GOAL, levelFromXp } from '@/lib/gamification'
-import { ASK_STORAGE_KEY, buildExplainPrompt } from '@/lib/explain'
 import type { PracticeQuestion } from '@/types'
 import { MODULE_THEME } from './primitives'
 
 type OptKey = 'A' | 'B' | 'C' | 'D' | 'E'
 
-/** Small "Explique avec l'IA" button — the strongest contextual upsell. */
-function ExplainButton({ onClick, subtle = false }: { onClick: () => void; subtle?: boolean }) {
+/** Per-question AI explanation state (lazily fetched + cached server-side). */
+type AiExplainState = { loading: boolean; text?: string; error?: string }
+
+/**
+ * "Explique avec l'IA": a button that fetches an AI explanation for the QCM
+ * (generated once, then cached in the DB) and renders it inline. Shows the
+ * trigger, a loading state, or the resulting explanation.
+ */
+function AiExplain({ state, onClick, subtle = false }: { state?: AiExplainState; onClick: () => void; subtle?: boolean }) {
+  if (state?.text) {
+    return (
+      <div style={{ marginTop: subtle ? 12 : 0, marginBottom: subtle ? 0 : 10, padding: '12px 14px', borderRadius: 12, background: 'var(--accent-50)', border: '0.5px solid var(--accent-50)' }}>
+        <div className="flex items-center" style={{ gap: 6, marginBottom: 6, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--accent-600)' }}>
+          <Sparkles size={13} /> Explication de l&apos;IA
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--gray-900)' }}>
+          <MCQRenderer text={state.text} />
+        </div>
+      </div>
+    )
+  }
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={state?.loading}
       className="inline-flex items-center justify-center font-bold"
       style={{
         gap: 7,
         height: subtle ? 38 : 44,
         width: '100%',
         borderRadius: 9999,
+        marginTop: subtle ? 0 : undefined,
         marginBottom: subtle ? 0 : 10,
         background: '#fff',
         border: '1px solid var(--accent-500)',
         color: 'var(--accent-600)',
         fontSize: 13,
-        cursor: 'pointer',
+        cursor: state?.loading ? 'default' : 'pointer',
       }}
     >
-      <Sparkles size={15} />
-      Explique avec l&apos;IA
+      {state?.loading ? (
+        <>
+          <Loader2 size={15} className="mp-spin" /> Génération…
+        </>
+      ) : (
+        <>
+          <Sparkles size={15} /> Explique avec l&apos;IA
+        </>
+      )}
     </button>
   )
 }
@@ -50,6 +77,7 @@ function FeedbackBar({
   combo,
   onContinue,
   onExplain,
+  aiState,
   label,
 }: {
   correct: boolean
@@ -58,6 +86,7 @@ function FeedbackBar({
   combo: number
   onContinue: () => void
   onExplain: () => void
+  aiState?: AiExplainState
   label: string
 }) {
   return (
@@ -102,7 +131,7 @@ function FeedbackBar({
           <MCQRenderer text={explanation} />
         </div>
       )}
-      <ExplainButton onClick={onExplain} />
+      <AiExplain state={aiState} onClick={onExplain} />
       <button
         type="button"
         onClick={onContinue}
@@ -241,18 +270,22 @@ function ReviewOption({
 }
 
 export function PracticeRunner({ onExit }: { onExit: () => void }) {
-  const router = useRouter()
   const { mode, questions, index, answers, revealed, finished, timed, setAnswer, reveal, next } =
     usePracticeStore()
+  const [aiExpl, setAiExpl] = useState<Record<number, AiExplainState>>({})
 
-  /** Hand the question to the AI tutor (pre-filled) — the key contextual upsell. */
-  function explainWithAi(question: PracticeQuestion) {
-    try {
-      sessionStorage.setItem(ASK_STORAGE_KEY, buildExplainPrompt(question))
-    } catch {
-      /* sessionStorage unavailable — navigate anyway */
+  /** Fetch (and cache server-side) the AI explanation for a QCM, shown inline. */
+  async function explainWithAi(question: PracticeQuestion) {
+    const cur = aiExpl[question.id]
+    if (cur?.text || cur?.loading) return
+    setAiExpl((s) => ({ ...s, [question.id]: { loading: true } }))
+    const res = await explainMcq(question.id)
+    if ('error' in res) {
+      setAiExpl((s) => ({ ...s, [question.id]: { loading: false, error: res.error } }))
+      toast.error(res.error)
+    } else {
+      setAiExpl((s) => ({ ...s, [question.id]: { loading: false, text: res.explanation } }))
     }
-    router.push('/student/ia')
   }
   const recorded = useRef<Set<number>>(new Set())
   const busy = useRef(false)
@@ -518,9 +551,7 @@ export function PracticeRunner({ onExit }: { onExit: () => void }) {
                             </div>
                           </div>
                         )}
-                        <div style={{ marginTop: 12 }}>
-                          <ExplainButton subtle onClick={() => explainWithAi(x)} />
-                        </div>
+                        <AiExplain subtle state={aiExpl[x.id]} onClick={() => explainWithAi(x)} />
                       </div>
                     )}
                   </div>
@@ -744,6 +775,7 @@ export function PracticeRunner({ onExit }: { onExit: () => void }) {
           combo={combo}
           onContinue={onPrimary}
           onExplain={() => explainWithAi(q)}
+          aiState={aiExpl[q.id]}
           label={isLast ? 'Terminer' : 'Continuer'}
         />
       ) : (

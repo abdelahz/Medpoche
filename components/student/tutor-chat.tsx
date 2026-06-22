@@ -12,7 +12,6 @@ import { saveChatTurn, setChatFeedback } from '@/app/actions/chat'
 import type { QuotaSnapshot } from '@/lib/usage'
 import { whatsappUpgradeUrl } from '@/lib/upgrade'
 import { pricePhrase } from '@/lib/plans'
-import { ASK_STORAGE_KEY } from '@/lib/explain'
 import { UpgradeButton } from './upgrade-button'
 import { ScreenHeader } from './primitives'
 
@@ -117,20 +116,6 @@ export function TutorChat({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages])
-
-  // Pre-fill the composer when arriving from a QCM's "Explique avec l'IA" button.
-  useEffect(() => {
-    try {
-      const handoff = sessionStorage.getItem(ASK_STORAGE_KEY)
-      if (handoff) {
-        sessionStorage.removeItem(ASK_STORAGE_KEY)
-        setInput(handoff)
-        requestAnimationFrame(() => taRef.current?.focus())
-      }
-    } catch {
-      /* sessionStorage unavailable — ignore */
-    }
-  }, [])
 
   async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]

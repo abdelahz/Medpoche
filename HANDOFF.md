@@ -22,7 +22,13 @@ questions** (`FREE_TEASER_AI`) before the lock. Single source of truth = `lib/pl
   signed URLs minted) instead of a blank wall.
 - **AI tease**: free plan gets 3 lifetime questions (text only) before the lock.
 - **Onboarding** modal captures prénom/nom/filière when the profile is incomplete.
-- Verified end-to-end on localhost as a **free** account; `tsc` + `lint` clean. No schema changes.
+- **Cached AI explanations:** "Explique avec l'IA" on a QCM correction (Apprentissage + corrigé)
+  now generates the explanation **inline** and caches it in **`mcqs.ai_explanation`** (generated
+  once per question, reused for every click/student). Action: `app/actions/explain.ts`.
+  **⚠️ Run the migration:** `alter table mcqs add column if not exists ai_explanation text;`
+  (appended to `schema.sql`). Until it's run, the button errors gracefully.
+- **Pending-upgrade banner** + **first-session win** card.
+- Verified on localhost as a **free** account (`tsc` + `lint` clean). Only new schema = `ai_explanation`.
 
 ## Repo / deploy state
 - Work on **`develop`**, fast-forward merge to **`main`**, deploy from `main` (Vercel).
