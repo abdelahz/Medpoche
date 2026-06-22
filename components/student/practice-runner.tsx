@@ -299,7 +299,9 @@ export function PracticeRunner({ onExit }: { onExit: () => void }) {
     const leveledUp =
       wrapup != null && levelFromXp(totalXp).level > levelFromXp(Math.max(0, totalXp - xpGain)).level
     const goalReached = wrapup != null && todayCount >= DAILY_GOAL
-    const party = pct >= 70 || leveledUp || goalReached
+    // First-ever session: before this one the student had essentially no XP.
+    const firstSession = wrapup != null && totalXp <= xpGain
+    const party = pct >= 70 || leveledUp || goalReached || firstSession
     // Corrigé: default to opening the wrong ones (where learning happens) until
     // the student toggles anything, then track their explicit choices.
     const reviewOpen =
@@ -366,6 +368,23 @@ export function PracticeRunner({ onExit }: { onExit: () => void }) {
             )}
           </div>
         </div>
+
+        {firstSession && (
+          <div
+            className="flex items-center mp-pop"
+            style={{ marginTop: 16, gap: 11, padding: '14px 16px', borderRadius: 16, background: 'var(--grad-reward)', color: '#fff' }}
+          >
+            <span className="flex items-center justify-center flex-shrink-0" style={{ width: 36, height: 36, borderRadius: 9999, background: 'rgba(255,255,255,0.25)' }}>
+              <Sparkles size={19} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>Première série terminée ! 🎉</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.9)' }}>
+                Tu viens de te lancer — reviens demain pour démarrer ta série 🔥
+              </div>
+            </div>
+          </div>
+        )}
 
         {wrapup != null && (
           <div

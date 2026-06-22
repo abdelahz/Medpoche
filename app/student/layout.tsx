@@ -5,6 +5,7 @@ import type { Plan } from '@/types'
 import { BottomNav } from '@/components/student/bottom-nav'
 import { StudentSidebar } from '@/components/student/student-sidebar'
 import { UpgradePopup } from '@/components/student/upgrade-popup'
+import { UpgradePendingBanner } from '@/components/student/upgrade-pending'
 import { Onboarding } from '@/components/student/onboarding'
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
@@ -45,6 +46,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
         className="relative w-full min-h-screen mx-auto max-w-[480px] pb-[60px] border-x-[0.5px] border-[color:var(--gray-200)] bg-white
                    lg:max-w-none lg:mx-0 lg:flex-1 lg:min-w-0 lg:pb-0 lg:border-x-0"
       >
+        <UpgradePendingBanner plan={plan} />
         {children}
         <BottomNav />
       </div>
