@@ -1,7 +1,8 @@
 'use client'
 
 import { useRef, useState, useEffect } from 'react'
-import { Check, X, Loader2, RotateCcw, Bookmark, Zap, Flame, Target, TrendingUp, ChevronDown, Clock } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Check, X, Loader2, RotateCcw, Bookmark, Zap, Flame, Target, TrendingUp, ChevronDown, Clock, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { usePracticeStore } from '@/lib/store/practice'
 import { recordAttempt, getSessionWrapup, type SessionWrapup } from '@/app/actions/practice'
@@ -9,9 +10,37 @@ import { toggleBookmark } from '@/app/actions/bookmarks'
 import { MCQRenderer } from '@/components/shared/mcq-renderer'
 import { ReportButton } from '@/components/shared/report-button'
 import { DAILY_GOAL, levelFromXp } from '@/lib/gamification'
+import { ASK_STORAGE_KEY, buildExplainPrompt } from '@/lib/explain'
+import type { PracticeQuestion } from '@/types'
 import { MODULE_THEME } from './primitives'
 
 type OptKey = 'A' | 'B' | 'C' | 'D' | 'E'
+
+/** Small "Explique avec l'IA" button — the strongest contextual upsell. */
+function ExplainButton({ onClick, subtle = false }: { onClick: () => void; subtle?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center justify-center font-bold"
+      style={{
+        gap: 7,
+        height: subtle ? 38 : 44,
+        width: '100%',
+        borderRadius: 9999,
+        marginBottom: subtle ? 0 : 10,
+        background: '#fff',
+        border: '1px solid var(--accent-500)',
+        color: 'var(--accent-600)',
+        fontSize: 13,
+        cursor: 'pointer',
+      }}
+    >
+      <Sparkles size={15} />
+      Explique avec l&apos;IA
+    </button>
+  )
+}
 
 /** Duolingo-style feedback panel shown after validating (Apprentissage mode). */
 function FeedbackBar({
@@ -20,6 +49,7 @@ function FeedbackBar({
   explanation,
   combo,
   onContinue,
+  onExplain,
   label,
 }: {
   correct: boolean
@@ -27,6 +57,7 @@ function FeedbackBar({
   explanation: string | null
   combo: number
   onContinue: () => void
+  onExplain: () => void
   label: string
 }) {
   return (
@@ -71,6 +102,7 @@ function FeedbackBar({
           <MCQRenderer text={explanation} />
         </div>
       )}
+      <ExplainButton onClick={onExplain} />
       <button
         type="button"
         onClick={onContinue}
@@ -209,8 +241,19 @@ function ReviewOption({
 }
 
 export function PracticeRunner({ onExit }: { onExit: () => void }) {
+  const router = useRouter()
   const { mode, questions, index, answers, revealed, finished, timed, setAnswer, reveal, next } =
     usePracticeStore()
+
+  /** Hand the question to the AI tutor (pre-filled) — the key contextual upsell. */
+  function explainWithAi(question: PracticeQuestion) {
+    try {
+      sessionStorage.setItem(ASK_STORAGE_KEY, buildExplainPrompt(question))
+    } catch {
+      /* sessionStorage unavailable — navigate anyway */
+    }
+    router.push('/student/ia')
+  }
   const recorded = useRef<Set<number>>(new Set())
   const busy = useRef(false)
   const [marks, setMarks] = useState<Record<number, boolean>>({})
@@ -456,6 +499,9 @@ export function PracticeRunner({ onExit }: { onExit: () => void }) {
                             </div>
                           </div>
                         )}
+                        <div style={{ marginTop: 12 }}>
+                          <ExplainButton subtle onClick={() => explainWithAi(x)} />
+                        </div>
                       </div>
                     )}
                   </div>
@@ -678,6 +724,7 @@ export function PracticeRunner({ onExit }: { onExit: () => void }) {
           explanation={q.explanation}
           combo={combo}
           onContinue={onPrimary}
+          onExplain={() => explainWithAi(q)}
           label={isLast ? 'Terminer' : 'Continuer'}
         />
       ) : (

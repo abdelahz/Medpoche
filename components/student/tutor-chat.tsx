@@ -11,6 +11,8 @@ import { MCQRenderer } from '@/components/shared/mcq-renderer'
 import { saveChatTurn, setChatFeedback } from '@/app/actions/chat'
 import type { QuotaSnapshot } from '@/lib/usage'
 import { whatsappUpgradeUrl } from '@/lib/upgrade'
+import { pricePhrase } from '@/lib/plans'
+import { ASK_STORAGE_KEY } from '@/lib/explain'
 import { UpgradeButton } from './upgrade-button'
 import { ScreenHeader } from './primitives'
 
@@ -95,9 +97,12 @@ function compressImage(file: File): Promise<Attachment> {
 export function TutorChat({
   initial,
   quota,
+  teaser = false,
 }: {
   initial: ChatMessage[]
   quota: QuotaSnapshot | null
+  /** Free-plan lifetime taste of the tutor: pill reads "offertes", text only. */
+  teaser?: boolean
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>(initial)
   const [input, setInput] = useState('')
@@ -112,6 +117,20 @@ export function TutorChat({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages])
+
+  // Pre-fill the composer when arriving from a QCM's "Explique avec l'IA" button.
+  useEffect(() => {
+    try {
+      const handoff = sessionStorage.getItem(ASK_STORAGE_KEY)
+      if (handoff) {
+        sessionStorage.removeItem(ASK_STORAGE_KEY)
+        setInput(handoff)
+        requestAnimationFrame(() => taRef.current?.focus())
+      }
+    } catch {
+      /* sessionStorage unavailable — ignore */
+    }
+  }, [])
 
   async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -148,7 +167,7 @@ export function TutorChat({
       pushLimit(
         q,
         img?.dataUrl,
-        "Tu as utilisé toutes tes questions par photo pour aujourd'hui 📸 Reviens demain, ou passe à un plan supérieur pour continuer sans limite."
+        `Tu as utilisé toutes tes questions par photo du jour 📸 Avec Premium, pose autant de photos que tu veux — ${pricePhrase('premium')}.`
       )
       setInput('')
       setAttached(null)
@@ -158,7 +177,7 @@ export function TutorChat({
       pushLimit(
         q,
         img?.dataUrl,
-        "Tu as utilisé toutes tes questions IA pour aujourd'hui 🌙 Reviens demain, ou passe à un plan supérieur pour continuer sans limite."
+        `Tu as posé toutes tes questions IA du jour 🌙 Les abonnés Premium continuent sans limite — ${pricePhrase('premium')}.`
       )
       setInput('')
       setAttached(null)
@@ -452,20 +471,26 @@ export function TutorChat({
             style={{ gap: 6, marginBottom: 8, fontSize: 11.5, color: 'var(--gray-500)' }}
           >
             {messagesLeft > 0 ? (
-              <span>
-                {messagesLeft} question{messagesLeft > 1 ? 's' : ''} IA restante
-                {messagesLeft > 1 ? 's' : ''} aujourd&apos;hui
-              </span>
+              teaser ? (
+                <span>
+                  🎁 {messagesLeft} question{messagesLeft > 1 ? 's' : ''} IA offerte{messagesLeft > 1 ? 's' : ''} — essaie l&apos;assistant
+                </span>
+              ) : (
+                <span>
+                  {messagesLeft} question{messagesLeft > 1 ? 's' : ''} IA restante
+                  {messagesLeft > 1 ? 's' : ''} aujourd&apos;hui
+                </span>
+              )
             ) : (
               <span className="flex items-center" style={{ gap: 4 }}>
-                Limite du jour atteinte ·{' '}
+                {teaser ? 'Questions offertes utilisées ·' : 'Limite du jour atteinte ·'}{' '}
                 <a
-                  href={whatsappUpgradeUrl('Premium')}
+                  href={whatsappUpgradeUrl(teaser ? 'Basic' : 'Premium')}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ color: 'var(--primary-500)', fontWeight: 600 }}
                 >
-                  Améliorer
+                  {teaser ? 'Débloquer l’IA' : 'Améliorer'}
                 </a>
               </span>
             )}

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { ArrowLeft, GraduationCap, Zap, Calendar, BookText, ClipboardList, ChevronRight, Loader2, Bookmark, RotateCcw, Flame, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 import { whatsappUpgradeUrl } from '@/lib/upgrade'
+import { pricePhrase } from '@/lib/plans'
 import type { PracticeFacet, PracticeMode, PracticeQuestion } from '@/types'
 import { usePracticeStore } from '@/lib/store/practice'
 import { getPracticeQuestions, getExamSession, getMistakeQuestions, getMatiereQuickSeries, type PracticeFilter } from '@/app/actions/practice'
@@ -251,16 +252,16 @@ export function PracticeSetup({
                     >
                       <span
                         className="flex items-center justify-center flex-shrink-0"
-                        style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--reward-500, #FFB020)', color: '#fff' }}
+                        style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--reward-500, #FFB020)', color: '#fff', fontSize: 18 }}
                       >
-                        <Lock size={17} />
+                        🔥
                       </span>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--gray-900)' }}>
-                          Limite de QCM du jour atteinte
+                        <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--gray-900)' }}>
+                          Bravo, tu as fini tes QCM du jour !
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--gray-600)' }}>
-                          Reviens demain, ou passe à un plan supérieur pour continuer.
+                          Les abonnés Premium ne s’arrêtent jamais — QCM illimités pour {pricePhrase('premium')}.
                         </div>
                       </div>
                       <ChevronRight size={18} color="var(--gray-400)" />

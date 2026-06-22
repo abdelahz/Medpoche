@@ -1,10 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getUserPlan } from '@/lib/usage'
 import { PLAN_LIMITS } from '@/lib/plans'
 import type { LibraryItem } from '@/types'
 import { LibraryBrowser } from '@/components/student/library-browser'
 import { StudentContainer } from '@/components/student/student-container'
-import { PlanLock } from '@/components/student/plan-lock'
+import { LibraryTease } from '@/components/student/library-tease'
 
 export default async function BibliothequePage() {
   const supabase = await createClient()
@@ -13,15 +14,20 @@ export default async function BibliothequePage() {
   } = await supabase.auth.getUser()
 
   const plan = await getUserPlan(supabase, user?.id ?? '')
-  // The library is a Basic+ feature — free plans see a friendly lock.
-  if (!PLAN_LIMITS[plan].library) {
+  const hasLibrary = PLAN_LIMITS[plan].library
+
+  // Free plans get a blurred teaser of the real catalogue (titles + counts) — no
+  // file_url is read into it, so the files themselves stay gated. Metadata is
+  // fetched with the service role so the preview shows even if RLS would hide it.
+  if (!hasLibrary) {
+    const { data } = await createAdminClient()
+      .from('library')
+      .select('id, title, type, module, subject, playlist, position, created_at')
+      .order('created_at', { ascending: false })
+    const items = (data ?? []).map((it) => ({ ...it, file_url: null })) as LibraryItem[]
     return (
       <StudentContainer wide>
-        <PlanLock
-          title="Bibliothèque"
-          heading="La bibliothèque est réservée aux abonnés"
-          message="Passe à un plan Basic ou Premium pour accéder aux cours, résumés, fiches et annales."
-        />
+        <LibraryTease items={items} />
       </StudentContainer>
     )
   }

@@ -10,8 +10,8 @@ import {
 } from '@/lib/gemini'
 import { parseMcqRef } from '@/lib/mcq-ref'
 import { getAiInstructions } from '@/app/actions/settings'
-import { checkAiQuota, recordAiUsage } from '@/lib/usage'
-import { PLAN_LIMITS, isUnlimited } from '@/lib/plans'
+import { checkAiQuota, recordAiUsage, getAiUsageAllTime } from '@/lib/usage'
+import { PLAN_LIMITS, pricePhrase, FREE_TEASER_AI, isUnlimited } from '@/lib/plans'
 import type { ChunkMatch, Plan } from '@/types'
 
 // 60s = Vercel Hobby max. On Pro you can raise this (up to 300) for longer answers.
@@ -108,26 +108,36 @@ export async function POST(req: Request) {
     .single()
   const plan = ((profile?.plan as Plan) ?? 'gratuit') as Plan
 
-  // Free plans don't include the AI tutor at all — return a feature lock, not a
-  // "daily limit" message (the UI already shows a lock screen; this guards the API).
+  // Free plans get a small lifetime taste of the tutor (text only) before the
+  // lock; photos stay Basic+. Paid plans go through the normal daily quota.
   const limits = PLAN_LIMITS[plan]
-  if (!isUnlimited(limits.aiMessages) && limits.aiMessages === 0) {
-    return new Response(
-      "L'assistant IA est réservé aux abonnés Basic et Premium. Passe à un plan supérieur pour l'utiliser.",
-      { status: 403, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Quota-Exceeded': 'feature' } }
-    )
-  }
-
-  const quota = await checkAiQuota(supabase, user.id, plan, isPhoto)
-  if (!quota.allowed) {
-    const message =
-      quota.reason === 'photos'
-        ? "Tu as utilisé toutes tes questions par photo pour aujourd'hui 📸 Reviens demain, ou passe à un plan supérieur pour continuer sans limite."
-        : "Tu as utilisé toutes tes questions IA pour aujourd'hui 🌙 Reviens demain, ou passe à un plan supérieur pour continuer sans limite."
-    return new Response(message, {
-      status: 429,
-      headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Quota-Exceeded': quota.reason },
-    })
+  const isFreeTeaser = !isUnlimited(limits.aiMessages) && limits.aiMessages === 0
+  if (isFreeTeaser) {
+    if (isPhoto) {
+      return new Response(
+        `Les questions par photo sont réservées aux abonnés 📸 Passe à Basic (${pricePhrase('basic')}) ou Premium pour les utiliser.`,
+        { status: 403, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Quota-Exceeded': 'feature' } }
+      )
+    }
+    const usedAllTime = await getAiUsageAllTime(supabase, user.id)
+    if (usedAllTime >= FREE_TEASER_AI) {
+      return new Response(
+        `Tu as utilisé tes ${FREE_TEASER_AI} questions IA offertes 🎁 Continue avec Basic (${pricePhrase('basic')}) pour 10 questions/jour, ou Premium en illimité.`,
+        { status: 429, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Quota-Exceeded': 'messages' } }
+      )
+    }
+  } else {
+    const quota = await checkAiQuota(supabase, user.id, plan, isPhoto)
+    if (!quota.allowed) {
+      const message =
+        quota.reason === 'photos'
+          ? `Tu as utilisé toutes tes questions par photo du jour 📸 Avec Premium, pose autant de photos que tu veux — ${pricePhrase('premium')}.`
+          : `Tu as posé toutes tes questions IA du jour 🌙 Les abonnés Premium continuent sans limite — ${pricePhrase('premium')}.`
+      return new Response(message, {
+        status: 429,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Quota-Exceeded': quota.reason },
+      })
+    }
   }
 
   // Quota is charged once an answer actually starts streaming (see below), so a

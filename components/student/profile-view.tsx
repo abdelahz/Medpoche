@@ -7,34 +7,11 @@ import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { updateStudentProfile } from '@/app/actions/profile'
 import { whatsappUpgradeUrl } from '@/lib/upgrade'
+import { PLAN_DISPLAY, PLAN_PRICE, PLAN_PRICE_ORIGINAL, isOnPromo, discountPct } from '@/lib/plans'
 import { FILIERES, type Profile, type Plan } from '@/types'
 import { ScreenHeader, StudentAvatar } from './primitives'
+import { HowItWorks } from './how-it-works'
 
-const PLAN_META: Record<Plan, { label: string; benefits: string[] }> = {
-  gratuit: {
-    label: 'Gratuit',
-    benefits: ['20 QCM par jour', 'Corrections expliquées', 'Suivi de progression'],
-  },
-  basic: {
-    label: 'Basic',
-    benefits: [
-      '40 QCM par jour',
-      'Examens blancs inclus',
-      'Bibliothèque complète',
-      'Assistant IA : 10 questions/jour (dont 1 photo)',
-      '1 appel vidéo avec un étudiant en médecine',
-    ],
-  },
-  premium: {
-    label: 'Premium',
-    benefits: [
-      'QCM illimités',
-      'Assistant IA illimité',
-      'Questions par photo illimitées',
-      'Appel hebdomadaire avec un étudiant en médecine',
-    ],
-  },
-}
 const PLAN_ORDER: Plan[] = ['gratuit', 'basic', 'premium']
 
 const label: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 500, color: 'var(--gray-600)', marginBottom: 6 }
@@ -124,7 +101,8 @@ export function ProfileView({ profile, email }: { profile: Profile | null; email
     window.location.href = '/auth/login'
   }
 
-  const upgradeTargets = PLAN_ORDER.slice(PLAN_ORDER.indexOf(plan) + 1)
+  // Highest tier first so Premium leads the upsell.
+  const upgradeTargets = PLAN_ORDER.slice(PLAN_ORDER.indexOf(plan) + 1).reverse()
 
   return (
     <div>
@@ -197,7 +175,7 @@ export function ProfileView({ profile, email }: { profile: Profile | null; email
             style={{ gap: 5, padding: '4px 10px', borderRadius: 9999, fontSize: 12, background: plan === 'gratuit' ? 'var(--gray-100)' : 'var(--primary-50)', color: plan === 'gratuit' ? 'var(--gray-600)' : 'var(--primary-600)' }}
           >
             {plan !== 'gratuit' && <Crown size={13} />}
-            {PLAN_META[plan].label}
+            {PLAN_DISPLAY[plan].label}
           </span>
         </div>
 
@@ -206,34 +184,78 @@ export function ProfileView({ profile, email }: { profile: Profile | null; email
             <Crown size={16} color="var(--primary-500)" /> Tu profites de tous les avantages Premium ✨
           </div>
         ) : (
-          <div className="grid" style={{ gap: 12, gridTemplateColumns: upgradeTargets.length > 1 ? '1fr 1fr' : '1fr' }}>
-            {upgradeTargets.map((t) => (
-              <div key={t} style={{ border: '0.5px solid var(--accent-50)', borderRadius: 16, padding: 16, background: 'var(--accent-50)' }}>
-                <div className="flex items-center" style={{ gap: 6, marginBottom: 10 }}>
-                  <Crown size={16} color="var(--primary-500)" />
-                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--gray-900)' }}>{PLAN_META[t].label}</span>
-                </div>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 14px', display: 'flex', flexDirection: 'column', gap: 7 }}>
-                  {PLAN_META[t].benefits.map((b) => (
-                    <li key={b} className="flex items-start" style={{ gap: 7, fontSize: 12.5, color: 'var(--gray-700)' }}>
-                      <Check size={14} color="var(--success-text)" style={{ flexShrink: 0, marginTop: 1 }} />
-                      {b}
-                    </li>
-                  ))}
-                </ul>
-                <a
-                  href={whatsappUpgradeUrl(PLAN_META[t].label)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center w-full font-bold"
-                  style={{ gap: 6, padding: '11px 16px', borderRadius: 9999, background: 'var(--grad-accent)', color: '#fff', fontSize: 13, cursor: 'pointer', textDecoration: 'none' }}
-                >
-                  Passer à {PLAN_META[t].label}
-                  <ArrowUpRight size={15} />
-                </a>
-              </div>
-            ))}
-          </div>
+          <>
+            <div className="flex flex-col" style={{ gap: 12 }}>
+              {upgradeTargets.map((t) => {
+                const meta = PLAN_DISPLAY[t]
+                const hero = meta.mostPopular
+                return (
+                  <div
+                    key={t}
+                    style={{
+                      position: 'relative',
+                      border: hero ? '1.5px solid var(--primary-500)' : '0.5px solid var(--gray-200)',
+                      borderRadius: 16,
+                      padding: 16,
+                      background: hero ? 'var(--primary-50)' : '#fff',
+                    }}
+                  >
+                    {hero && (
+                      <span
+                        className="inline-flex items-center"
+                        style={{ position: 'absolute', top: -10, right: 14, gap: 4, padding: '3px 10px', borderRadius: 9999, fontSize: 10.5, fontWeight: 700, background: 'var(--grad-primary)', color: '#fff' }}
+                      >
+                        <Crown size={11} /> Le plus populaire
+                      </span>
+                    )}
+                    <div className="flex items-baseline justify-between" style={{ marginBottom: 10 }}>
+                      <div className="flex items-center" style={{ gap: 6 }}>
+                        <Crown size={16} color="var(--primary-500)" />
+                        <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--gray-900)' }}>{meta.label}</span>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div className="flex items-baseline justify-end" style={{ gap: 6 }}>
+                          {isOnPromo(t) && (
+                            <span style={{ fontSize: 12, color: 'var(--gray-400)', textDecoration: 'line-through' }}>
+                              {PLAN_PRICE_ORIGINAL[t]} DH
+                            </span>
+                          )}
+                          <span>
+                            <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--gray-900)' }}>{PLAN_PRICE[t]} DH</span>
+                            <span style={{ fontSize: 11, color: 'var(--gray-600)' }}>/mois</span>
+                          </span>
+                        </div>
+                        {isOnPromo(t) && (
+                          <span className="inline-flex items-center" style={{ marginTop: 4, padding: '2px 7px', borderRadius: 9999, fontSize: 10, fontWeight: 700, background: 'var(--reward-50)', color: 'var(--reward-600)' }}>
+                            Promo −{discountPct(t)}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 14px', display: 'flex', flexDirection: 'column', gap: 7 }}>
+                      {meta.benefits.map((b) => (
+                        <li key={b} className="flex items-start" style={{ gap: 7, fontSize: 12.5, color: 'var(--gray-700)' }}>
+                          <Check size={14} color="var(--success-text)" style={{ flexShrink: 0, marginTop: 1 }} />
+                          {b}
+                        </li>
+                      ))}
+                    </ul>
+                    <a
+                      href={whatsappUpgradeUrl(meta.label)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center w-full font-bold"
+                      style={{ gap: 6, padding: '11px 16px', borderRadius: 9999, background: hero ? 'var(--grad-primary)' : 'var(--grad-accent)', color: '#fff', fontSize: 13, cursor: 'pointer', textDecoration: 'none' }}
+                    >
+                      Passer à {meta.label}
+                      <ArrowUpRight size={15} />
+                    </a>
+                  </div>
+                )
+              })}
+            </div>
+            <HowItWorks />
+          </>
         )}
       </div>
 

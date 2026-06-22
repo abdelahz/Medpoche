@@ -52,6 +52,15 @@ export function capToRemaining<T>(rows: T[], remaining: number | null): T[] {
   return remaining === null ? rows : rows.slice(0, Math.max(0, remaining))
 }
 
+/** All-time AI tutor requests for a user (used for the free lifetime teaser). */
+export async function getAiUsageAllTime(supabase: SupabaseClient, userId: string): Promise<number> {
+  const { count } = await supabase
+    .from('ai_usage')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+  return count ?? 0
+}
+
 /** Today's AI tutor usage for a user, split by kind. */
 export async function getAiUsageToday(
   supabase: SupabaseClient,

@@ -3,6 +3,8 @@ import { Flame, Zap, Target, ArrowRight, RotateCcw, Bookmark, MessageSquare, Awa
 import type { Badge } from '@/lib/gamification'
 import type { LeaderboardRow, Plan } from '@/types'
 import { whatsappUpgradeUrl, whatsappMentorUrl } from '@/lib/upgrade'
+import { PLAN_DISPLAY, PLAN_PRICE, PLAN_PRICE_ORIGINAL, isOnPromo } from '@/lib/plans'
+import { daysUntilConcours } from '@/lib/exam'
 import { MODULE_THEME, StudentAvatar, ScreenHeader, ProgressBar, initialsOf } from './primitives'
 import { BookProfessor } from './book-professor'
 
@@ -53,29 +55,42 @@ function TintStat({
   )
 }
 
-function QuickAction({ href, icon, label, count, bg, color }: { href: string; icon: React.ReactNode; label: string; count?: number; bg: string; color: string }) {
+function QuickAction({ href, icon, label, count, bg, color, locked }: { href: string; icon: React.ReactNode; label: string; count?: number; bg: string; color: string; locked?: boolean }) {
   return (
-    <Link href={href} className="flex flex-col" style={{ gap: 9, padding: 14, borderRadius: 16, border: '0.5px solid var(--gray-200)', background: '#fff' }}>
+    <Link href={href} className="flex flex-col" style={{ position: 'relative', gap: 9, padding: 14, borderRadius: 16, border: '0.5px solid var(--gray-200)', background: '#fff' }}>
       <span className="flex items-center justify-center" style={{ width: 38, height: 38, borderRadius: 11, background: bg, color }}>
         {icon}
       </span>
       <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-900)' }}>{label}</span>
-      {count !== undefined && <span style={{ fontSize: 11, color: 'var(--gray-600)' }}>{count} en attente</span>}
+      {locked ? (
+        <span className="inline-flex items-center" style={{ gap: 3, fontSize: 10.5, fontWeight: 600, color: 'var(--primary-600)' }}>
+          <Lock size={11} /> Basic
+        </span>
+      ) : (
+        count !== undefined && <span style={{ fontSize: 11, color: 'var(--gray-600)' }}>{count} en attente</span>
+      )}
     </Link>
   )
 }
 
-/** Per-plan upsell copy for the home banner (premium hides it). */
-const UPSELL: Partial<Record<Plan, { target: string; title: string; sub: string }>> = {
+/**
+ * Per-plan upsell copy for the home banner (premium hides it). Outcome/emotion
+ * led — the medical-student mentor is the hook. Free users are pushed to
+ * Premium with Basic offered as a cheaper on-ramp.
+ */
+const UPSELL: Partial<
+  Record<Plan, { target: Plan; title: string; sub: string; secondary?: { target: Plan } }>
+> = {
   gratuit: {
-    target: 'Basic',
-    title: 'Débloque tout ton potentiel 🚀',
-    sub: '40 QCM/jour, examens blancs, bibliothèque, IA et un appel avec un étudiant en médecine.',
+    target: 'premium',
+    title: 'Ne révise pas seul 🎓',
+    sub: 'Un étudiant en médecine t’accompagne chaque semaine, avec QCM, IA et examens blancs en illimité.',
+    secondary: { target: 'basic' },
   },
   basic: {
-    target: 'Premium',
+    target: 'premium',
     title: 'Passe à Premium 👑',
-    sub: 'QCM et IA illimités, photos sans limite, et un appel hebdomadaire avec un étudiant en médecine.',
+    sub: 'QCM et IA illimités, photos sans limite, et un appel chaque semaine avec un étudiant en médecine.',
   },
 }
 
@@ -108,6 +123,14 @@ export function AccueilView(p: AccueilViewProps) {
       <div style={{ padding: '0 20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* Hero — gradient, daily goal + streak + the one big CTA */}
         <div style={{ borderRadius: 22, padding: '20px 22px', background: 'var(--grad-primary)', color: '#fff' }}>
+          {daysUntilConcours() > 0 && (
+            <div
+              className="inline-flex items-center"
+              style={{ gap: 6, marginBottom: 14, padding: '5px 12px', borderRadius: 9999, background: 'rgba(255,255,255,0.18)', fontSize: 12, fontWeight: 600 }}
+            >
+              🎯 J-{daysUntilConcours()} avant le concours
+            </div>
+          )}
           <div className="flex items-start justify-between" style={{ marginBottom: 14 }}>
             <div>
               <div style={{ fontSize: 13, opacity: 0.9 }}>Objectif du jour</div>
@@ -136,22 +159,47 @@ export function AccueilView(p: AccueilViewProps) {
 
         {/* Upsell — non-premium only, opens WhatsApp to upgrade */}
         {upsell && (
-          <a
-            href={whatsappUpgradeUrl(upsell.target)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center"
-            style={{ gap: 13, padding: '15px 17px', borderRadius: 18, background: 'var(--accent-50)', border: '0.5px solid var(--accent-50)', textDecoration: 'none' }}
-          >
-            <span className="flex items-center justify-center flex-shrink-0" style={{ width: 42, height: 42, borderRadius: 13, background: 'var(--grad-accent)', color: '#fff' }}>
-              <Crown size={21} />
-            </span>
-            <span style={{ flex: 1, minWidth: 0 }}>
-              <span className="block" style={{ fontSize: 14, fontWeight: 700, color: 'var(--gray-900)' }}>{upsell.title}</span>
-              <span className="block" style={{ fontSize: 12, color: 'var(--gray-600)', marginTop: 2 }}>{upsell.sub}</span>
-            </span>
-            <ArrowRight size={18} color="var(--accent-600)" style={{ flexShrink: 0 }} />
-          </a>
+          <div style={{ borderRadius: 18, background: 'var(--accent-50)', border: '0.5px solid var(--accent-50)', overflow: 'hidden' }}>
+            <a
+              href={whatsappUpgradeUrl(PLAN_DISPLAY[upsell.target].label)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center"
+              style={{ gap: 13, padding: '15px 17px', textDecoration: 'none' }}
+            >
+              <span className="flex items-center justify-center flex-shrink-0" style={{ width: 42, height: 42, borderRadius: 13, background: 'var(--grad-accent)', color: '#fff' }}>
+                <Crown size={21} />
+              </span>
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span className="block" style={{ fontSize: 14, fontWeight: 700, color: 'var(--gray-900)' }}>{upsell.title}</span>
+                <span className="block" style={{ fontSize: 12, color: 'var(--gray-600)', marginTop: 2 }}>{upsell.sub}</span>
+                <span className="inline-flex items-center" style={{ marginTop: 8, gap: 5, padding: '3px 9px', borderRadius: 9999, background: 'var(--grad-accent)', color: '#fff', fontSize: 11.5, fontWeight: 700 }}>
+                  {PLAN_DISPLAY[upsell.target].label} ·{' '}
+                  {isOnPromo(upsell.target) && (
+                    <span style={{ textDecoration: 'line-through', opacity: 0.7, fontWeight: 600 }}>{PLAN_PRICE_ORIGINAL[upsell.target]}</span>
+                  )}{' '}
+                  {PLAN_PRICE[upsell.target]} DH/mois
+                </span>
+                {daysUntilConcours() > 0 && (
+                  <span className="block" style={{ fontSize: 11, color: 'var(--accent-600)', fontWeight: 600, marginTop: 6 }}>
+                    Plus que {daysUntilConcours()} jours avant le concours — chaque jour compte.
+                  </span>
+                )}
+              </span>
+              <ArrowRight size={18} color="var(--accent-600)" style={{ flexShrink: 0 }} />
+            </a>
+            {upsell.secondary && (
+              <a
+                href={whatsappUpgradeUrl(PLAN_DISPLAY[upsell.secondary.target].label)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-center"
+                style={{ padding: '9px 12px', borderTop: '0.5px solid rgba(124,92,255,0.15)', fontSize: 12, fontWeight: 600, color: 'var(--accent-600)', textDecoration: 'none' }}
+              >
+                ou commence avec {PLAN_DISPLAY[upsell.secondary.target].label} à {PLAN_PRICE[upsell.secondary.target]} DH/mois
+              </a>
+            )}
+          </div>
         )}
 
         {/* Mentor call — paying plans book their call with a medical student */}
@@ -267,7 +315,7 @@ export function AccueilView(p: AccueilViewProps) {
         <div className="grid grid-cols-3" style={{ gap: 12 }}>
           <QuickAction href="/student/entrainement?erreurs=1" icon={<RotateCcw size={18} />} label="Mes erreurs" count={p.mistakeCount} bg="var(--danger-bg)" color="var(--danger-text)" />
           <QuickAction href="/student/entrainement?favoris=1" icon={<Bookmark size={18} />} label="Favoris" count={p.bookmarkCount} bg="var(--reward-50)" color="var(--reward-600)" />
-          <QuickAction href="/student/ia" icon={<MessageSquare size={18} />} label="Assistant IA" bg="var(--accent-50)" color="var(--accent-600)" />
+          <QuickAction href="/student/ia" icon={<MessageSquare size={18} />} label="Assistant IA" bg="var(--accent-50)" color="var(--accent-600)" locked={p.plan === 'gratuit'} />
         </div>
 
         {/* Badges */}

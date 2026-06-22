@@ -5,6 +5,7 @@ import type { Plan } from '@/types'
 import { BottomNav } from '@/components/student/bottom-nav'
 import { StudentSidebar } from '@/components/student/student-sidebar'
 import { UpgradePopup } from '@/components/student/upgrade-popup'
+import { Onboarding } from '@/components/student/onboarding'
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -13,7 +14,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
   } = await supabase.auth.getUser()
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, plan, is_admin')
+    .select('full_name, plan, is_admin, prenom, nom, filiere, phone')
     .eq('id', user?.id ?? '')
     .single()
 
@@ -28,6 +29,14 @@ export default async function StudentLayout({ children }: { children: React.Reac
   return (
     <div className="min-h-screen lg:flex bg-[color:var(--gray-50)] lg:bg-white">
       <UpgradePopup plan={plan} />
+      {!profile?.is_admin && (
+        <Onboarding
+          prenom={(profile?.prenom as string | null) ?? null}
+          nom={(profile?.nom as string | null) ?? null}
+          filiere={(profile?.filiere as string | null) ?? null}
+          phone={(profile?.phone as string | null) ?? null}
+        />
+      )}
       {/* Laptop: white left sidebar. Hidden on phones. */}
       <StudentSidebar fullName={profile?.full_name ?? null} plan={plan} />
 
