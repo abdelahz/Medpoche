@@ -127,6 +127,7 @@ export function QcmBank({
         years={years}
         subjects={subjects}
         examBlancs={examBlancs}
+        total={total}
         onNew={() => setEditing('new')}
       />
 

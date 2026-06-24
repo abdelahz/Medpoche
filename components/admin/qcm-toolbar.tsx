@@ -2,11 +2,11 @@
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useState, useEffect, useCallback } from 'react'
-import { Search, Plus, UploadCloud, Sparkles, Loader2, CheckCheck } from 'lucide-react'
+import { Search, Plus, UploadCloud, Sparkles, Loader2, CheckCheck, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { indexMcqBank } from '@/app/actions/dataset'
-import { bulkPublish } from '@/app/actions/mcqs'
+import { bulkPublish, bulkDelete } from '@/app/actions/mcqs'
 import { Button } from './button'
 
 const MODULE_FILTERS = [
@@ -96,11 +96,13 @@ export function QcmToolbar({
   years,
   subjects,
   examBlancs,
+  total,
   onNew,
 }: {
   years: number[]
   subjects: string[]
   examBlancs: string[]
+  total: number
   onNew: () => void
 }) {
   const router = useRouter()
@@ -117,6 +119,11 @@ export function QcmToolbar({
   const [search, setSearch] = useState(q)
   const [indexing, setIndexing] = useState(false)
   const [publishing, setPublishing] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  // Only delete in bulk when the list is actually narrowed — never wipe the
+  // whole bank from one click.
+  const filterActive = !!(moduleFilter || status || year || subject || examBlanc || q)
 
   async function publishAll() {
     if (publishing) return
@@ -139,6 +146,41 @@ export function QcmToolbar({
         `${res.published} QCM publié${res.published > 1 ? 's' : ''}.` +
           (res.skipped > 0 ? ` ${res.skipped} ignoré${res.skipped > 1 ? 's' : ''} (correction ou matière manquante).` : '')
       )
+      router.refresh()
+    } else {
+      toast.error(res.error)
+    }
+  }
+
+  async function deleteAll() {
+    if (deleting) return
+    if (!filterActive) {
+      toast.error('Appliquez au moins un filtre avant de supprimer en masse.')
+      return
+    }
+    if (total === 0) {
+      toast.error('Aucun QCM à supprimer pour ce filtre.')
+      return
+    }
+    if (
+      !confirm(
+        `Supprimer définitivement les ${total} QCM correspondant au filtre actuel ?\n\n` +
+          'Cette action est irréversible et efface aussi les réponses et favoris associés.'
+      )
+    )
+      return
+    setDeleting(true)
+    const res = await bulkDelete({
+      module: moduleFilter || undefined,
+      status: status || undefined,
+      year: year ? Number(year) : undefined,
+      subject: subject || undefined,
+      exam_blanc: examBlanc || undefined,
+      q: q || undefined,
+    })
+    setDeleting(false)
+    if (res.success) {
+      toast.success(`${res.deleted} QCM supprimé${res.deleted > 1 ? 's' : ''}.`)
       router.refresh()
     } else {
       toast.error(res.error)
@@ -216,6 +258,12 @@ export function QcmToolbar({
         </div>
 
         <div className="flex items-center" style={{ gap: 8, marginLeft: 'auto' }}>
+          {filterActive && (
+            <Button variant="danger" onClick={deleteAll} disabled={deleting}>
+              {deleting ? <Loader2 size={15} className="mp-spin" /> : <Trash2 size={15} />}
+              {deleting ? 'Suppression…' : `Supprimer (${total})`}
+            </Button>
+          )}
           <Button variant="ghost" onClick={publishAll} disabled={publishing}>
             {publishing ? <Loader2 size={15} className="mp-spin" /> : <CheckCheck size={15} />}
             {publishing ? 'Publication…' : 'Publier tout'}

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { ExtractedMCQ, FlagValue, ChunkMatch } from '@/types'
 import { embedQuery, generateMcqExplanation, type ContextBlock } from '@/lib/gemini'
@@ -278,6 +279,68 @@ export async function updateMcqPosition(id: number, position: number | null): Pr
 
   revalidatePath('/admin/qcms')
   return { success: true }
+}
+
+/**
+ * Permanently delete EVERY MCQ matching the current bank filter. Admin-gated.
+ *
+ * Safety: refuses to run with no filter (would wipe the whole bank). Child rows
+ * in mcq_attempts / bookmarks reference mcqs WITHOUT on-delete-cascade and are
+ * spread across users, so we clear them with the service-role client first —
+ * otherwise the FK blocks the delete (and RLS hides other users' rows).
+ */
+export async function bulkDelete(filter: {
+  module?: string
+  status?: string
+  year?: number
+  subject?: string
+  exam_blanc?: string
+  q?: string
+}): Promise<{ success: true; deleted: number } | { success: false; error: string }> {
+  const supabase = await createClient()
+  const admin = await requireAdmin(supabase)
+  if (!admin.ok) return { success: false, error: admin.error }
+
+  const hasFilter = !!(
+    filter.module || filter.status || filter.year || filter.subject || filter.exam_blanc || filter.q
+  )
+  if (!hasFilter) {
+    return {
+      success: false,
+      error: 'Appliquez au moins un filtre avant de supprimer en masse.',
+    }
+  }
+
+  // Resolve the exact set shown by the filter (admins can read every row).
+  let query = supabase.from('mcqs').select('id')
+  if (filter.module) query = query.eq('module', filter.module)
+  if (filter.status) query = query.eq('status', filter.status)
+  if (filter.year) query = query.eq('year', filter.year)
+  if (filter.subject) query = query.eq('subject', filter.subject)
+  if (filter.exam_blanc) query = query.eq('exam_blanc', filter.exam_blanc)
+  if (filter.q) query = query.ilike('question', `%${filter.q}%`)
+
+  const { data, error } = await query
+  if (error) return { success: false, error: error.message }
+  const ids = (data ?? []).map((r) => r.id as number)
+  if (ids.length === 0) return { success: true, deleted: 0 }
+
+  // Service-role: reach across users' attempts/bookmarks and bypass RLS.
+  const admindb = createAdminClient()
+  for (let i = 0; i < ids.length; i += 200) {
+    const batch = ids.slice(i, i + 200)
+    const childTables = ['mcq_attempts', 'bookmarks'] as const
+    for (const table of childTables) {
+      const { error: childErr } = await admindb.from(table).delete().in('mcq_id', batch)
+      if (childErr) return { success: false, error: childErr.message }
+    }
+    // dataset_chunks.mcq_id cascades, so deleting the MCQs clears them too.
+    const { error: delErr } = await admindb.from('mcqs').delete().in('id', batch)
+    if (delErr) return { success: false, error: delErr.message }
+  }
+
+  revalidatePath('/admin/qcms')
+  return { success: true, deleted: ids.length }
 }
 
 /** Permanently delete an MCQ. Admin-gated. */
