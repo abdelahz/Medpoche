@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { LegalShell, LegalH2, LegalP } from '@/components/landing/legal-shell'
 
 export const metadata: Metadata = {
-  title: 'Mentions légales — MedenPoche',
+  title: 'Mentions légales',
   description: 'Mentions légales de la plateforme MedenPoche.',
   alternates: { canonical: '/mentions-legales' },
 }

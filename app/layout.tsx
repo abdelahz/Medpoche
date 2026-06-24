@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Plus_Jakarta_Sans } from 'next/font/google'
 import { Toaster } from 'sonner'
 import { Providers } from '@/components/providers'
@@ -11,9 +11,27 @@ const jakarta = Plus_Jakarta_Sans({
   variable: '--font-sans',
 })
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://medenpoche.ma'
+
 export const metadata: Metadata = {
-  title: 'MedenPoche',
-  description: 'La plateforme de préparation au concours de médecine',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: 'MedenPoche — Réussis ton concours de médecine au Maroc',
+    template: '%s · MedenPoche',
+  },
+  description:
+    "La plateforme tout-en-un pour préparer le concours de médecine au Maroc : QCM, examens blancs et tuteur IA.",
+  applicationName: 'MedenPoche',
+  openGraph: {
+    type: 'website',
+    locale: 'fr_FR',
+    siteName: 'MedenPoche',
+  },
+  twitter: { card: 'summary_large_image' },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#3B6BE8',
 }
 
 export default function RootLayout({

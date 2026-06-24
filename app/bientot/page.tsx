@@ -5,7 +5,7 @@ import { getPrelaunchMode } from '@/app/actions/settings'
 import { ComingSoon } from '@/components/student/coming-soon'
 
 export const metadata: Metadata = {
-  title: 'Bientôt disponible — MedenPoche',
+  title: 'Bientôt disponible',
   robots: { index: false, follow: false },
 }
 

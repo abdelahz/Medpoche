@@ -9,7 +9,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://medenpoche.ma'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: 'MedenPoche — Réussis ton concours de médecine au Maroc',
+  title: { absolute: 'MedenPoche — Réussis ton concours de médecine au Maroc' },
   description:
     "La plateforme tout-en-un pour préparer le concours de médecine au Maroc : QCM par matière et examens blancs, tuteur IA qui t'explique tout (même en photo), cours et suivi de progression. Commence gratuitement.",
   keywords: [
@@ -31,14 +31,13 @@ export const metadata: Metadata = {
     title: 'MedenPoche — Réussis ton concours de médecine',
     description:
       "QCM, examens blancs et un tuteur IA qui t'explique tout. La prépa au concours de médecine, dans ta poche. Commence gratuitement.",
-    images: [{ url: '/brand/logo-full.png', width: 1200, height: 630, alt: 'MedenPoche' }],
+    // Share card comes from app/opengraph-image.tsx (real 1200×630).
   },
   twitter: {
     card: 'summary_large_image',
     title: 'MedenPoche — Réussis ton concours de médecine',
     description:
       "QCM, examens blancs et un tuteur IA qui t'explique tout. Commence gratuitement.",
-    images: ['/brand/logo-full.png'],
   },
   robots: { index: true, follow: true },
 }
